@@ -4,10 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class VirtualFSNodeTest {
+    final String name = "test_name";
+    final String newName = "name_test";
+
     @Test
     void createNode() {
-        String name = "test_name";
-
         VirtualFSNode virtualFSNode = new VirtualFSNode(name);
 
         assertEquals(name, virtualFSNode.name);
@@ -16,8 +17,6 @@ class VirtualFSNodeTest {
 
     @Test
     void createNodeWithRootDirectory() {
-        String name = "test_name";
-
         VirtualDirectory virtualDirectory = new VirtualDirectory(name);
         VirtualFSNode virtualFSNode = new VirtualFSNode(name, virtualDirectory);
 
@@ -26,8 +25,6 @@ class VirtualFSNodeTest {
 
     @Test
     void getName() {
-        String name = "test_name";
-
         VirtualFSNode virtualFSNode = new VirtualFSNode(name);
 
         assertEquals(name, virtualFSNode.getName());
@@ -35,9 +32,6 @@ class VirtualFSNodeTest {
 
     @Test
     void rename() {
-        String name = "test_name";
-        String newName = "name_test";
-
         VirtualFSNode virtualFSNode = new VirtualFSNode(name);
         virtualFSNode.rename(newName);
 
@@ -46,8 +40,6 @@ class VirtualFSNodeTest {
 
     @Test
     void getNullRootDirectory() {
-        String name = "test_name";
-
         VirtualFSNode virtualFSNode = new VirtualFSNode(name);
 
         assertNull(virtualFSNode.getRootDirectory());
@@ -55,8 +47,6 @@ class VirtualFSNodeTest {
 
     @Test
     void getRootDirectory() {
-        String name = "test_name";
-
         VirtualDirectory virtualDirectory = new VirtualDirectory(name);
         VirtualFSNode virtualFSNode = new VirtualFSNode(name, virtualDirectory);
 

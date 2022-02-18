@@ -3,6 +3,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class VirtualFSTest {
+    final String name = "test_name";
+
     @Test
     void initialization() {
         VirtualFS virtualFS = new VirtualFS();
@@ -21,8 +23,6 @@ class VirtualFSTest {
 
     @Test
     void mkdir() {
-        String directoryName = "test_name";
-
         VirtualFS virtualFS = new VirtualFS();
 
         assertArrayEquals(
@@ -30,7 +30,7 @@ class VirtualFSTest {
                 virtualFS.getRootDirectory().getDirectories().toArray()
         );
 
-        VirtualDirectory newDirectory = virtualFS.mkdir(directoryName);
+        VirtualDirectory newDirectory = virtualFS.mkdir(name);
 
         assertArrayEquals(
                 new VirtualDirectory[]{newDirectory},
@@ -42,8 +42,6 @@ class VirtualFSTest {
 
     @Test
     void touch() {
-        String fileName = "test_name";
-
         VirtualFS virtualFS = new VirtualFS();
 
         assertArrayEquals(
@@ -51,7 +49,7 @@ class VirtualFSTest {
                 virtualFS.getRootDirectory().getFiles().toArray()
         );
 
-        VirtualFile newFile = virtualFS.touch(fileName);
+        VirtualFile newFile = virtualFS.touch(name);
 
         assertArrayEquals(
                 new VirtualFile[]{newFile},

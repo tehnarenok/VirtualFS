@@ -3,10 +3,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class VirtualDirectoryTest {
+    final String name = "test_name";
+
     @Test
      void initialization() {
-        String name = "test_name";
-
         VirtualDirectory directory = new VirtualDirectory(name);
 
         assertNull(directory.getRootDirectory());
@@ -24,8 +24,6 @@ class VirtualDirectoryTest {
 
     @Test
     void initializationWithRootDirectory() {
-        String name = "test_name";
-
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualDirectory directory = new VirtualDirectory(name, rootDirectory);
 
@@ -34,8 +32,6 @@ class VirtualDirectoryTest {
 
     @Test
     void getDirectories() {
-        String name = "test_name";
-
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualDirectory virtualDirectory_1 = rootDirectory.mkdir(name);
 
@@ -54,8 +50,6 @@ class VirtualDirectoryTest {
 
     @Test
     void getFiles() {
-        String name = "test_name";
-
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualFile virtualFile_1 = rootDirectory.touch(name);
 
@@ -74,8 +68,6 @@ class VirtualDirectoryTest {
 
     @Test
     void mkdir() {
-        String name = "test_name";
-
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
         VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
@@ -90,8 +82,6 @@ class VirtualDirectoryTest {
 
     @Test
     void touch() {
-        String name = "test_name";
-
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
         VirtualFile virtualFile = rootDirectory.touch(name);

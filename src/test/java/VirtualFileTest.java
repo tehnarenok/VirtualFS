@@ -6,10 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class VirtualFileTest {
+    final String name = "test_name";
+    final String newName = "name_test";
+
     @Test
     void createFile() {
-        String name = "test_name";
-
         VirtualFile virtualFile = new VirtualFile(name);
         Date createdAt = new Date();
 
@@ -31,7 +32,6 @@ class VirtualFileTest {
 
     @Test
     void createFileWithContent() {
-        String name = "test_name";
         byte[] content;
         content = new byte[]{1, 2, 4};
 
@@ -45,9 +45,6 @@ class VirtualFileTest {
 
     @Test
     void renameFile() throws InterruptedException {
-        String name = "test_name";
-        String newName = "name_test";
-
         VirtualFile virtualFile;
         virtualFile = new VirtualFile(name);
 
