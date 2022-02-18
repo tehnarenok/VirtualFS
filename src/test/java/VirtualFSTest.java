@@ -130,10 +130,60 @@ class VirtualFSTest {
     void moveDirectoryToRootDirectory() {
         VirtualFS virtualFS = new VirtualFS();
 
-        VirtualDirectory virtualDirectory  = virtualFS.mkdir(name);
+        VirtualDirectory virtualDirectory  = virtualFS.mkdir(name).mkdir(name);
 
         virtualFS.move(virtualDirectory);
 
         assertEquals(virtualFS.getRootDirectory(), virtualDirectory.getRootDirectory());
+    }
+
+    @Test
+    void copyFile() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualFile virtualFile = virtualFS.touch(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+
+        VirtualFile copiedFile = virtualFS.copy(virtualFile, destinationDirectory);
+
+        assertEquals(virtualFS.getRootDirectory(), virtualFile.getRootDirectory());
+        assertEquals(destinationDirectory, copiedFile.getRootDirectory());
+    }
+
+    @Test
+    void copyDirectory() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualDirectory virtualDirectory  = virtualFS.mkdir(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+
+        VirtualDirectory copiedDirectory = virtualFS.copy(virtualDirectory, destinationDirectory);
+
+        assertEquals(destinationDirectory, copiedDirectory.getRootDirectory());
+        assertEquals(virtualFS.getRootDirectory(), virtualDirectory.getRootDirectory());
+    }
+
+    @Test
+    void copyFileToRootDirectory() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualFile virtualFile = virtualFS.mkdir(name).touch(name);
+
+        VirtualFile copiedFile = virtualFS.copy(virtualFile);
+
+        assertEquals(virtualFS.getRootDirectory(), copiedFile.getRootDirectory());
+        assertNotEquals(virtualFS.getRootDirectory(), virtualFile.getRootDirectory());
+    }
+
+    @Test
+    void copyDirectoryToRootDirectory() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualDirectory virtualDirectory = virtualFS.mkdir(name).mkdir(name);
+
+        VirtualDirectory copiedDirectory = virtualFS.copy(virtualDirectory);
+
+        assertNotEquals(virtualFS.getRootDirectory(), virtualDirectory.getRootDirectory());
+        assertEquals(virtualFS.getRootDirectory(), copiedDirectory.getRootDirectory());
     }
 }

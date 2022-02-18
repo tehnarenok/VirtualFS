@@ -42,4 +42,20 @@ public class VirtualFS {
     public void move(VirtualDirectory virtualDirectory) {
         virtualDirectory.move(this.rootDirectory);
     }
+
+    public VirtualFile copy(VirtualFile virtualFile, VirtualDirectory destinationDirectory) {
+        return virtualFile.copy(destinationDirectory);
+    }
+
+    public VirtualFile copy(VirtualFile virtualFile) {
+        return virtualFile.copy(this.rootDirectory);
+    }
+
+    public VirtualDirectory copy(VirtualDirectory virtualDirectory, VirtualDirectory destinationDirectory) {
+        return virtualDirectory.copy(destinationDirectory);
+    }
+
+    public VirtualDirectory copy(VirtualDirectory virtualDirectory) {
+        return virtualDirectory.copy(this.rootDirectory);
+    }
 }
