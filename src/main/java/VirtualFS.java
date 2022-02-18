@@ -1,5 +1,5 @@
 public class VirtualFS {
-    private VirtualDirectory rootDirectory;
+    private final VirtualDirectory rootDirectory;
 
     public VirtualFS() {
         this.rootDirectory = new VirtualDirectory("");

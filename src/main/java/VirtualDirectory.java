@@ -1,8 +1,8 @@
 import java.util.Vector;
 
 public class VirtualDirectory extends VirtualFSNode {
-    private Vector<VirtualDirectory> directories;
-    private Vector<VirtualFile> files;
+    private final Vector<VirtualDirectory> directories;
+    private final Vector<VirtualFile> files;
 
     public VirtualDirectory(String name) {
         this(name, null);

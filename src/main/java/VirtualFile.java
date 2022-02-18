@@ -1,7 +1,7 @@
 import java.util.Date;
 
 public class VirtualFile extends VirtualFSNode {
-    private Date createdAt;
+    final private Date createdAt;
     private Date modifiedAt;
     private byte[] content;
 
