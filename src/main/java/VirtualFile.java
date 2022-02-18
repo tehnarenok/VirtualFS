@@ -31,4 +31,10 @@ public class VirtualFile extends VirtualFSNode {
     public Date getModifiedAt() {
         return modifiedAt;
     }
+
+    @Override
+    public void rename(String name) {
+        super.rename(name);
+        this.modifiedAt = new Date();
+    }
 }

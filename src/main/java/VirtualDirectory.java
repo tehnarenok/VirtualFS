@@ -10,8 +10,8 @@ public class VirtualDirectory extends VirtualFSNode {
 
     protected VirtualDirectory(String name, VirtualDirectory rootDirectory) {
         super(name, rootDirectory);
-        this.directories = new Vector<VirtualDirectory>();
-        this.files = new Vector<VirtualFile>();
+        this.directories = new Vector<>();
+        this.files = new Vector<>();
     }
 
     public Vector<VirtualDirectory> getDirectories() {

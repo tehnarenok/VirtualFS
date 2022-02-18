@@ -7,7 +7,7 @@ class VirtualFSTest {
     void initialization() {
         VirtualFS virtualFS = new VirtualFS();
 
-        assertEquals(null, virtualFS.getRootDirectory().getRootDirectory());
+        assertNull(virtualFS.getRootDirectory().getRootDirectory());
         assertEquals("", virtualFS.getRootDirectory().getName());
         assertArrayEquals(
                 new VirtualDirectory[]{},

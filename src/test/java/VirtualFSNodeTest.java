@@ -1,8 +1,7 @@
 import org.junit.jupiter.api.Test;
 
-import java.util.Vector;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class VirtualFSNodeTest {
     @Test
@@ -12,7 +11,7 @@ class VirtualFSNodeTest {
         VirtualFSNode virtualFSNode = new VirtualFSNode(name);
 
         assertEquals(name, virtualFSNode.name);
-        assertEquals(null, virtualFSNode.rootDirectory);
+        assertNull(virtualFSNode.rootDirectory);
     }
 
     @Test
@@ -51,7 +50,7 @@ class VirtualFSNodeTest {
 
         VirtualFSNode virtualFSNode = new VirtualFSNode(name);
 
-        assertEquals(null, virtualFSNode.getRootDirectory());
+        assertNull(virtualFSNode.getRootDirectory());
     }
 
     @Test

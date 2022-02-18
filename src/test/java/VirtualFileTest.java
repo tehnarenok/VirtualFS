@@ -2,7 +2,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class VirtualFileTest {
     @Test
@@ -39,6 +40,30 @@ class VirtualFileTest {
         assertArrayEquals(
                 content,
                 virtualFile.getContent()
+        );
+    }
+
+    @Test
+    void renameFile() throws InterruptedException {
+        String name = "test_name";
+        String newName = "name_test";
+
+        VirtualFile virtualFile;
+        virtualFile = new VirtualFile(name);
+
+        Thread.sleep(1000);
+
+        virtualFile.rename(newName);
+        Date modifiedAt = new Date();
+
+        assertEquals(
+                modifiedAt,
+                virtualFile.getModifiedAt()
+        );
+
+        assertEquals(
+                newName,
+                virtualFile.getName()
         );
     }
 }

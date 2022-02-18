@@ -1,17 +1,15 @@
 import org.junit.jupiter.api.Test;
 
-import java.util.Vector;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class VirtualDirectoryTest {
     @Test
-    void initialization() {
+     void initialization() {
         String name = "test_name";
 
         VirtualDirectory directory = new VirtualDirectory(name);
 
-        assertEquals(null, directory.getRootDirectory());
+        assertNull(directory.getRootDirectory());
 
         assertArrayEquals(
                 new VirtualDirectory[]{},
