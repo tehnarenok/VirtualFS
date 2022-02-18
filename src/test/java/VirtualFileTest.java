@@ -127,4 +127,59 @@ class VirtualFileTest {
 
         assertEquals(destinationDirectory, virtualFile.getRootDirectory());
     }
+
+    @Test
+    void copy() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualDirectory destinationDirectory = new VirtualDirectory(name);
+
+        VirtualFile virtualFile = rootDirectory.touch(name);
+
+        VirtualFile copiedVirtualFile = virtualFile.copy(destinationDirectory);
+        Date createdAtCopy = new Date();
+
+        assertArrayEquals(
+                new VirtualFile[]{virtualFile},
+                rootDirectory.getFiles().toArray()
+        );
+
+        assertArrayEquals(
+                new VirtualFile[]{copiedVirtualFile},
+                destinationDirectory.getFiles().toArray()
+        );
+
+        assertEquals(destinationDirectory, copiedVirtualFile.getRootDirectory());
+        assertEquals(rootDirectory, virtualFile.getRootDirectory());
+
+        assertEquals(
+                virtualFile.getName(),
+                copiedVirtualFile.getName()
+        );
+
+        assertEquals(
+                createdAtCopy,
+                copiedVirtualFile.getCreatedAt()
+        );
+
+        assertNotEquals(virtualFile, copiedVirtualFile);
+    }
+
+    @Test
+    void copyWithContent() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualDirectory destinationDirectory = new VirtualDirectory(name);
+
+        byte[] content;
+        content = new byte[]{1, 2, 4};
+
+        VirtualFile virtualFile = new VirtualFile(name, rootDirectory, content);
+        rootDirectory.paste(virtualFile);
+
+        VirtualFile copiedVirtualFile = virtualFile.copy(destinationDirectory);
+
+        assertArrayEquals(
+                content,
+                copiedVirtualFile.getContent()
+        );
+    }
 }

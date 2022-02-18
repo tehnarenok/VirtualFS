@@ -51,4 +51,20 @@ public class VirtualFile extends VirtualFSNode {
         this.rootDirectory.remove(this);
         destinationDirectory.paste(this);
     }
+
+    protected VirtualFile clone() {
+        VirtualFile clonedFile = new VirtualFile(
+                this.name,
+                this.rootDirectory,
+                this.content
+        );
+
+        return clonedFile;
+    }
+
+    public VirtualFile copy(VirtualDirectory destinationDirectory) {
+        VirtualFile copiedFile = this.clone();
+        copiedFile.move(destinationDirectory);
+        return copiedFile;
+    }
 }

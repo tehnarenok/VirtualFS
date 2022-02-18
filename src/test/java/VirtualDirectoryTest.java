@@ -166,4 +166,62 @@ class VirtualDirectoryTest {
 
         assertEquals(destinationDirectory, virtualDirectory.getRootDirectory());
     }
+
+    @Test
+    void copy() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualDirectory destinationDirectory = new VirtualDirectory(name);
+
+        VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
+
+        VirtualDirectory copiedDirectory = virtualDirectory.copy(destinationDirectory);
+
+        assertArrayEquals(
+                new VirtualDirectory[]{virtualDirectory},
+                rootDirectory.getDirectories().toArray()
+        );
+
+        assertArrayEquals(
+                new VirtualDirectory[]{copiedDirectory},
+                destinationDirectory.getDirectories().toArray()
+        );
+
+        assertEquals(rootDirectory, virtualDirectory.getRootDirectory());
+        assertEquals(destinationDirectory, copiedDirectory.getRootDirectory());
+
+        assertEquals(
+                virtualDirectory.getName(),
+                copiedDirectory.getName()
+        );
+
+        assertNotEquals(virtualDirectory, copiedDirectory);
+    }
+
+    @Test
+    void copyWithChildren() {
+        String fileName = "test file name";
+        String directoryName = "test directory name";
+
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualDirectory destinationDirectory = new VirtualDirectory(name);
+
+        VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
+        VirtualFile testFile = virtualDirectory.touch(fileName);
+        VirtualDirectory testDirectory = virtualDirectory.mkdir(directoryName);
+
+        VirtualDirectory copiedDirectory = virtualDirectory.copy(destinationDirectory);
+
+        assertEquals(
+                virtualDirectory.getFiles().size(),
+                copiedDirectory.getFiles().size()
+        );
+
+        assertEquals(
+                virtualDirectory.getDirectories().size(),
+                copiedDirectory.getDirectories().size()
+        );
+
+        assertNotEquals(testFile, copiedDirectory.getFiles().get(0));
+        assertNotEquals(testDirectory, copiedDirectory.getDirectories().get(0));
+    }
 }
