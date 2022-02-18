@@ -1,3 +1,5 @@
+import exceptions.UnremovableVirtualNode;
+
 import java.util.Vector;
 
 public class VirtualDirectory extends VirtualFSNode {
@@ -32,5 +34,28 @@ public class VirtualDirectory extends VirtualFSNode {
         VirtualFile newFile = new VirtualFile(name, this);
         this.files.add(newFile);
         return newFile;
+    }
+
+    @Override
+    public void remove() throws UnremovableVirtualNode {
+        super.remove();
+        for (VirtualDirectory directory : this.directories) {
+            directory.remove();
+        }
+        for (VirtualFile file : this.files) {
+            file.remove();
+        }
+
+        this.rootDirectory.remove(this);
+    }
+
+    public void remove(VirtualFile file) {
+        this.files.remove(file);
+        file.rootDirectory = null;
+    }
+
+    public void remove(VirtualDirectory directory) {
+        this.directories.remove(directory);
+        directory.rootDirectory = null;
     }
 }

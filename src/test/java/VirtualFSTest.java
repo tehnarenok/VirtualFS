@@ -58,4 +58,36 @@ class VirtualFSTest {
 
         assertEquals(newFile, virtualFS.getRootDirectory().getFiles().get(0));
     }
+
+    @Test
+    void removeDirectory() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualDirectory virtualDirectory = virtualFS.mkdir(name);
+
+        assertDoesNotThrow(() -> virtualFS.remove(virtualDirectory));
+
+        assertArrayEquals(
+                new VirtualDirectory[]{},
+                virtualFS.getRootDirectory().getDirectories().toArray()
+        );
+
+        assertNull(virtualDirectory.getRootDirectory());
+    }
+
+    @Test
+    void removeFile() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualFile virtualFile = virtualFS.touch(name);
+
+        assertDoesNotThrow(() -> virtualFS.remove(virtualFile));
+
+        assertArrayEquals(
+                new VirtualDirectory[]{},
+                virtualFS.getRootDirectory().getFiles().toArray()
+        );
+
+        assertNull(virtualFile.getRootDirectory());
+    }
 }

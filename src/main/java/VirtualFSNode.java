@@ -1,3 +1,5 @@
+import exceptions.UnremovableVirtualNode;
+
 public class VirtualFSNode {
     protected String name;
     protected VirtualDirectory rootDirectory;
@@ -21,5 +23,11 @@ public class VirtualFSNode {
 
     public VirtualDirectory getRootDirectory() {
         return this.rootDirectory;
+    }
+
+    public void remove() throws UnremovableVirtualNode {
+        if(this.rootDirectory == null) {
+            throw new UnremovableVirtualNode();
+        }
     }
 }

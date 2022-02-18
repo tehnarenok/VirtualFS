@@ -1,3 +1,4 @@
+import exceptions.UnremovableVirtualNode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -94,4 +95,53 @@ class VirtualDirectoryTest {
         );
     }
 
+    @Test
+    void removeWithNullRootDirectory() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+
+        Exception exception = assertThrows(UnremovableVirtualNode.class, rootDirectory::remove);
+
+        assertTrue(exception.getMessage().contains("This node cannot be deleted"));
+    }
+
+    @Test
+    void removeChildDirectory() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
+
+        assertDoesNotThrow(() -> rootDirectory.remove(virtualDirectory));
+
+        assertArrayEquals(
+                new VirtualDirectory[]{},
+                rootDirectory.getDirectories().toArray()
+        );
+    }
+
+    @Test
+    void removeChildFile() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualFile virtualFile = rootDirectory.touch(name);
+
+        assertDoesNotThrow(() -> rootDirectory.remove(virtualFile));
+
+        assertArrayEquals(
+                new VirtualFile[]{},
+                rootDirectory.getFiles().toArray()
+        );
+    }
+
+    @Test
+    void removeSelf() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
+
+        assertDoesNotThrow(() -> virtualDirectory.remove());
+
+        assertArrayEquals(
+                new VirtualDirectory[]{},
+                rootDirectory.getDirectories().toArray()
+        );
+
+        assertNull(virtualDirectory.getRootDirectory());
+    }
 }

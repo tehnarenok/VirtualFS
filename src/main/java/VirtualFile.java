@@ -1,3 +1,5 @@
+import exceptions.UnremovableVirtualNode;
+
 import java.util.Date;
 
 public class VirtualFile extends VirtualFSNode {
@@ -36,5 +38,11 @@ public class VirtualFile extends VirtualFSNode {
     public void rename(String name) {
         super.rename(name);
         this.modifiedAt = new Date();
+    }
+
+    @Override
+    public void remove() throws UnremovableVirtualNode {
+        super.remove();
+        this.rootDirectory.remove(this);
     }
 }

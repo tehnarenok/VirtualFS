@@ -1,9 +1,9 @@
+import exceptions.UnremovableVirtualNode;
 import org.junit.jupiter.api.Test;
 
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class VirtualFileTest {
     final String name = "test_name";
@@ -62,5 +62,47 @@ class VirtualFileTest {
                 newName,
                 virtualFile.getName()
         );
+    }
+
+    @Test
+    void removeWithNullRootDirectory() {
+        VirtualFile virtualFile = new VirtualFile(name);
+
+        Exception exception = assertThrows(UnremovableVirtualNode.class, virtualFile::remove);
+
+        assertEquals(
+                "This node cannot be deleted",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void removeSelf() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualFile virtualFile = rootDirectory.touch(name);
+
+        assertDoesNotThrow(virtualFile::remove);
+
+        assertArrayEquals(
+                new VirtualFile[]{},
+                rootDirectory.getFiles().toArray()
+        );
+
+        assertNull(virtualFile.getRootDirectory());
+    }
+
+    @Test
+    void remove() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualFile virtualFile = rootDirectory.touch(name);
+
+        assertDoesNotThrow(() -> rootDirectory.remove(virtualFile));
+
+        assertArrayEquals(
+                new VirtualFile[]{},
+                rootDirectory.getFiles().toArray()
+        );
+
+        assertNull(virtualFile.getRootDirectory());
     }
 }
