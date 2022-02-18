@@ -1,6 +1,10 @@
 import exceptions.UnremovableVirtualNode;
 import org.junit.jupiter.api.Test;
 
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.regex.Pattern;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class VirtualDirectoryTest {
@@ -223,5 +227,77 @@ class VirtualDirectoryTest {
 
         assertNotEquals(testFile, copiedDirectory.getFiles().get(0));
         assertNotEquals(testDirectory, copiedDirectory.getDirectories().get(0));
+    }
+
+    @Test
+    void findSubNameInEmpty() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+
+        Iterator<VirtualFile> emptyIterator = rootDirectory.find("123");
+
+        assertFalse(emptyIterator.hasNext());
+        assertThrows(NoSuchElementException.class, emptyIterator::next);
+    }
+
+    @Test
+    void findSubName() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+
+        VirtualFile virtualFile = rootDirectory.touch("123");
+        rootDirectory.touch("456");
+
+        Iterator<VirtualFile> iterator = rootDirectory.find("123");
+
+        assertTrue(iterator.hasNext());
+        assertEquals(virtualFile, iterator.next());
+        assertFalse(iterator.hasNext());
+
+        VirtualFile secondVirtualFile = rootDirectory.touch("123456");
+
+        iterator = rootDirectory.find("123");
+
+        assertTrue(iterator.hasNext());
+        assertEquals(virtualFile, iterator.next());
+        assertTrue(iterator.hasNext());
+        assertEquals(secondVirtualFile, iterator.next());
+        assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    void recursiveFindSubName() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+
+        VirtualFile virtualFile = rootDirectory.touch("123");
+        rootDirectory.touch("456");
+
+        VirtualFile secondVirtualFile = rootDirectory.mkdir("test directory").touch("451236");
+
+        Iterator<VirtualFile> iterator = rootDirectory.find("123", true);
+
+        assertTrue(iterator.hasNext());
+        assertEquals(virtualFile, iterator.next());
+        assertTrue(iterator.hasNext());
+        assertEquals(secondVirtualFile, iterator.next());
+        assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    void findByPattern() {
+        Pattern pattern = Pattern.compile("^test.*\\.java$");
+
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+
+        VirtualFile test123Java = rootDirectory.touch("test123.java");
+        VirtualFile testJava = rootDirectory.touch("test.java");
+        rootDirectory.touch("123test.java");
+        rootDirectory.touch("123test.kt");
+
+        Iterator<VirtualFile> iterator = rootDirectory.find(pattern, true);
+
+        assertTrue(iterator.hasNext());
+        assertEquals(test123Java, iterator.next());
+        assertTrue(iterator.hasNext());
+        assertEquals(testJava, iterator.next());
+        assertFalse(iterator.hasNext());
     }
 }

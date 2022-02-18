@@ -1,6 +1,9 @@
 import exceptions.UnremovableVirtualNode;
 
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Vector;
+import java.util.regex.Pattern;
 
 public class VirtualDirectory extends VirtualFSNode {
     private final Vector<VirtualDirectory> directories;
@@ -91,5 +94,74 @@ public class VirtualDirectory extends VirtualFSNode {
         VirtualDirectory copiedDirectory = this.clone();
         copiedDirectory.move(destinationDirectory);
         return copiedDirectory;
+    }
+
+    private Iterator<VirtualFile> find(Match match, Boolean isRecursive) {
+        Iterator<VirtualFile> it = new Iterator<>() {
+            private Integer fileIdx = 0;
+            private Integer directoryIdx = 0;
+            private Iterator<VirtualFile> directoryIterator = null;
+
+            @Override
+            public boolean hasNext() {
+                while (fileIdx < files.size()) {
+                    if (match.match(files.get(fileIdx))) {
+                        return true;
+                    }
+                    fileIdx++;
+                }
+
+                if (!isRecursive) {
+                    return false;
+                }
+
+                if (directoryIterator != null) {
+                    if (directoryIterator.hasNext()) {
+                        return true;
+                    }
+                    directoryIdx++;
+                }
+
+                while (directoryIdx < directories.size()) {
+                    directoryIterator = directories.get(directoryIdx).find(match, isRecursive);
+                    if (directoryIterator.hasNext()) {
+                        return true;
+                    }
+                    directoryIdx++;
+                }
+
+                return false;
+            }
+
+            @Override
+            public VirtualFile next() {
+                if (hasNext()) {
+                    if (fileIdx < files.size()) {
+                        return files.get(fileIdx++);
+                    }
+                    return directoryIterator.next();
+                }
+
+                throw new NoSuchElementException();
+            }
+        };
+
+        return it;
+    }
+
+    public Iterator<VirtualFile> find(String subName, Boolean isRecursive) {
+        return this.find((VirtualFile file) -> file.getName().contains(subName), isRecursive);
+    }
+
+    public Iterator<VirtualFile> find(String subName) {
+        return this.find(subName, false);
+    }
+
+    public Iterator<VirtualFile> find(Pattern pattern, Boolean isRecursive) {
+        return this.find((VirtualFile file) -> pattern.matcher(file.getName()).matches(), isRecursive);
+    }
+
+    public  Iterator<VirtualFile> find(Pattern pattern) {
+        return this.find(pattern, false);
     }
 }

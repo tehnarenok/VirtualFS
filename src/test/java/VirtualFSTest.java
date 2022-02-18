@@ -1,5 +1,8 @@
 import org.junit.jupiter.api.Test;
 
+import java.util.Iterator;
+import java.util.regex.Pattern;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class VirtualFSTest {
@@ -185,5 +188,41 @@ class VirtualFSTest {
 
         assertNotEquals(virtualFS.getRootDirectory(), virtualDirectory.getRootDirectory());
         assertEquals(virtualFS.getRootDirectory(), copiedDirectory.getRootDirectory());
+    }
+
+    @Test
+    void findBySubName() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualFile firstFile = virtualFS.touch("test_file");
+        virtualFS.touch("123");
+        VirtualFile secondFile = virtualFS.mkdir(name).touch("file_test");
+
+        Iterator<VirtualFile> iterator = virtualFS.find("test");
+
+        assertTrue(iterator.hasNext());
+        assertEquals(firstFile, iterator.next());
+        assertTrue(iterator.hasNext());
+        assertEquals(secondFile, iterator.next());
+        assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    void findByPattern() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        Pattern pattern = Pattern.compile("^.*test.*$");
+
+        VirtualFile firstFile = virtualFS.touch("test_file");
+        virtualFS.touch("123");
+        VirtualFile secondFile = virtualFS.mkdir(name).touch("file_test");
+
+        Iterator<VirtualFile> iterator = virtualFS.find(pattern);
+
+        assertTrue(iterator.hasNext());
+        assertEquals(firstFile, iterator.next());
+        assertTrue(iterator.hasNext());
+        assertEquals(secondFile, iterator.next());
+        assertFalse(iterator.hasNext());
     }
 }

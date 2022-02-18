@@ -1,5 +1,8 @@
 import exceptions.UnremovableVirtualNode;
 
+import java.util.Iterator;
+import java.util.regex.Pattern;
+
 public class VirtualFS {
     private final VirtualDirectory rootDirectory;
 
@@ -57,5 +60,13 @@ public class VirtualFS {
 
     public VirtualDirectory copy(VirtualDirectory virtualDirectory) {
         return virtualDirectory.copy(this.rootDirectory);
+    }
+
+    public Iterator<VirtualFile> find(String subName) {
+        return this.rootDirectory.find(subName, true);
+    }
+
+    public Iterator<VirtualFile> find(Pattern pattern) {
+        return this.rootDirectory.find(pattern, true);
     }
 }
