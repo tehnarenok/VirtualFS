@@ -90,4 +90,50 @@ class VirtualFSTest {
 
         assertNull(virtualFile.getRootDirectory());
     }
+
+    @Test
+    void moveFile() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualFile virtualFile = virtualFS.touch(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+
+        virtualFS.move(virtualFile, destinationDirectory);
+
+        assertEquals(destinationDirectory, virtualFile.getRootDirectory());
+    }
+
+    @Test
+    void moveDirectory() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualDirectory virtualDirectory  = virtualFS.mkdir(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+
+        virtualFS.move(virtualDirectory, destinationDirectory);
+
+        assertEquals(destinationDirectory, virtualDirectory.getRootDirectory());
+    }
+
+    @Test
+    void moveFileToRootDirectory() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualFile virtualFile = virtualFS.touch(name);
+
+        virtualFS.move(virtualFile);
+
+        assertEquals(virtualFile.getRootDirectory(), virtualFile.getRootDirectory());
+    }
+
+    @Test
+    void moveDirectoryToRootDirectory() {
+        VirtualFS virtualFS = new VirtualFS();
+
+        VirtualDirectory virtualDirectory  = virtualFS.mkdir(name);
+
+        virtualFS.move(virtualDirectory);
+
+        assertEquals(virtualFS.getRootDirectory(), virtualDirectory.getRootDirectory());
+    }
 }

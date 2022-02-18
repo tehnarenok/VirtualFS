@@ -105,4 +105,26 @@ class VirtualFileTest {
 
         assertNull(virtualFile.getRootDirectory());
     }
+
+    @Test
+    void move() {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualDirectory destinationDirectory = new VirtualDirectory(name);
+
+        VirtualFile virtualFile = rootDirectory.touch(name);
+
+        virtualFile.move(destinationDirectory);
+
+        assertArrayEquals(
+                new VirtualFile[]{},
+                rootDirectory.getFiles().toArray()
+        );
+
+        assertArrayEquals(
+                new VirtualFile[]{virtualFile},
+                destinationDirectory.getFiles().toArray()
+        );
+
+        assertEquals(destinationDirectory, virtualFile.getRootDirectory());
+    }
 }

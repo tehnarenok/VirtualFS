@@ -30,4 +30,6 @@ public class VirtualFSNode {
             throw new UnremovableVirtualNode();
         }
     }
+
+    public void move(VirtualDirectory destinationDirectory) {}
 }

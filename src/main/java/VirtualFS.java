@@ -26,4 +26,20 @@ public class VirtualFS {
     public void remove(VirtualDirectory directory) throws UnremovableVirtualNode {
         directory.remove();
     }
+
+    public void move(VirtualFile virtualFile, VirtualDirectory destinationDirectory) {
+        virtualFile.move(destinationDirectory);
+    }
+
+    public void move(VirtualDirectory virtualDirectory, VirtualDirectory destinationDirectory) {
+        virtualDirectory.move(destinationDirectory);
+    }
+
+    public void move(VirtualFile virtualFile) {
+        virtualFile.move(this.rootDirectory);
+    }
+
+    public void move(VirtualDirectory virtualDirectory) {
+        virtualDirectory.move(this.rootDirectory);
+    }
 }

@@ -45,4 +45,10 @@ public class VirtualFile extends VirtualFSNode {
         super.remove();
         this.rootDirectory.remove(this);
     }
+
+    @Override
+    public void move(VirtualDirectory destinationDirectory) {
+        this.rootDirectory.remove(this);
+        destinationDirectory.paste(this);
+    }
 }

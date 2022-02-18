@@ -58,4 +58,20 @@ public class VirtualDirectory extends VirtualFSNode {
         this.directories.remove(directory);
         directory.rootDirectory = null;
     }
+
+    protected void paste(VirtualDirectory virtualDirectory) {
+        this.directories.add(virtualDirectory);
+        virtualDirectory.rootDirectory = this;
+    }
+
+    protected void paste(VirtualFile virtualFile) {
+        this.files.add(virtualFile);
+        virtualFile.rootDirectory = this;
+    }
+
+    @Override
+    public void move(VirtualDirectory destinationDirectory) {
+        this.rootDirectory.remove(this);
+        destinationDirectory.paste(this);
+    }
 }
