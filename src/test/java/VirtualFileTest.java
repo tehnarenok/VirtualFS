@@ -1,5 +1,6 @@
 import exceptions.*;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -15,6 +16,16 @@ class VirtualFileTest {
 
     @Rule
     public TemporaryFolder folder = TemporaryFolder.builder().assureDeletion().build();
+
+    private VirtualFS virtualFS;
+    private File sourceFile;
+
+    @BeforeEach
+    public void setup() throws IOException, ClassNotFoundException {
+        folder.create();
+        sourceFile = folder.newFile(name);
+        virtualFS = new VirtualFS(sourceFile);
+    }
 
     @Test
     void createFile() {
@@ -54,11 +65,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void modifyContent() throws InterruptedException, IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    void modifyContent() throws InterruptedException, IOException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualFile virtualFile = virtualFS.touch(name);
         Date modifiedAt = virtualFile.getModifiedAt();
 
@@ -87,12 +94,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void removeSelf() throws IOException, ClassNotFoundException, LockedVirtualFSNode {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
-
+    void removeSelf() throws LockedVirtualFSNode {
         VirtualFile virtualFile = virtualFS.touch(name);
 
         assertDoesNotThrow(() -> virtualFile.remove());
@@ -121,9 +123,18 @@ class VirtualFileTest {
     }
 
     @Test
+    void removeDeleted() throws LockedVirtualFSNode {
+        VirtualFile virtualFile = virtualFS.touch(name);
+
+        assertDoesNotThrow(() -> virtualFile.remove());
+
+        assertThrows(VirtualFSNodeIsDeleted.class, () -> virtualFile.remove());
+    }
+
+    @Test
     void move() throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
-        VirtualDirectory rootDirectory = new VirtualDirectory(name);
-        VirtualDirectory destinationDirectory = new VirtualDirectory(name);
+        VirtualDirectory rootDirectory = virtualFS.getRootDirectory();
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
         VirtualFile virtualFile = rootDirectory.touch(name);
 
@@ -143,9 +154,10 @@ class VirtualFileTest {
     }
 
     @Test
-    void copy() throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
-        VirtualDirectory rootDirectory = new VirtualDirectory(name);
-        VirtualDirectory destinationDirectory = new VirtualDirectory(name);
+    void copy() throws NullVirtualFS, LockedVirtualFSNode,
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+        VirtualDirectory rootDirectory = virtualFS.getRootDirectory();
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
         VirtualFile virtualFile = rootDirectory.touch(name);
 
@@ -171,23 +183,20 @@ class VirtualFileTest {
         );
 
         assertEquals(
-                createdAtCopy,
-                copiedVirtualFile.getCreatedAt()
+                createdAtCopy.toString(),
+                copiedVirtualFile.getCreatedAt().toString()
         );
 
         assertNotEquals(virtualFile, copiedVirtualFile);
     }
 
     @Test
-    void copyWithContent() throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException, IOException, ClassNotFoundException, VirtualFSNodeIsDeleted {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    void copyWithContent() throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException,
+            IOException, VirtualFSNodeIsDeleted {
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
         byte[] content;
-        content = new byte[]{1, 2, 4};
+        content = "Hello".getBytes();
 
         VirtualFile virtualFile = virtualFS.touch(name);
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("rw");
@@ -223,16 +232,13 @@ class VirtualFileTest {
     }
 
     @Test
-    void copyDirectoryWithContent() throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException, IOException, ClassNotFoundException, VirtualFSNodeIsDeleted {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    void copyDirectoryWithContent() throws NullVirtualFS, LockedVirtualFSNode,
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
         byte[] content;
-        content = new byte[]{1, 2, 4};
+        content = "Hello world".getBytes();
 
         VirtualFile virtualFile = directory.touch(name);
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("rw");
@@ -273,26 +279,9 @@ class VirtualFileTest {
         );
     }
 
-//    @Test
-//    void read() throws IOException {
-//        byte[] content;
-//        content = new byte[]{1, 2, 4, 5, 6};
-//
-//        VirtualFile virtualFile = new VirtualFile(name, null, content);
-//
-//        InputStream inputStream = virtualFile.read();
-//
-//        byte[] readContent = new byte[3];
-//        inputStream.read(readContent, 0, 3);
-//
-//        assertArrayEquals(
-//                new byte[]{1, 2, 4},
-//                readContent
-//        );
-//    }
-
     @Test
-    void testReadWrite_1() throws IOException, ClassNotFoundException, OverlappingVirtualFileLockException, NullVirtualFS, LockedVirtualFSNode {
+    void testReadWrite() throws IOException, ClassNotFoundException,
+            OverlappingVirtualFileLockException, NullVirtualFS, LockedVirtualFSNode {
         folder.create();
         File sourceFile = folder.newFile(name);
         VirtualFS virtualFS = new VirtualFS(sourceFile);
@@ -314,10 +303,6 @@ class VirtualFileTest {
 
     @Test
     void testReadWriteLong() throws IOException, ClassNotFoundException, OverlappingVirtualFileLockException, NullVirtualFS, LockedVirtualFSNode {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
         long content = 10;
 
         VirtualFile file = virtualFS.touch(name);
@@ -334,10 +319,6 @@ class VirtualFileTest {
 
     @Test
     void testReadWrite_2() throws IOException, ClassNotFoundException, OverlappingVirtualFileLockException, NullVirtualFS, LockedVirtualFSNode {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
         String content = "hello world";
 
         VirtualFile file = virtualFS.touch(name);
@@ -386,11 +367,7 @@ class VirtualFileTest {
     };
 
     @Test
-    void testReadWrite_3() throws IOException, ClassNotFoundException, OverlappingVirtualFileLockException, NullVirtualFS, InterruptedException, LockedVirtualFSNode {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    void testReadWriteParrarel() throws IOException, ClassNotFoundException, OverlappingVirtualFileLockException, NullVirtualFS, InterruptedException, LockedVirtualFSNode {
         String name_1 = "name_1";
         String name_2 = "name_2";
 
@@ -414,21 +391,50 @@ class VirtualFileTest {
         virtualFS.save();
 
         VirtualFS virtualFS_2 = new VirtualFS(sourceFile);
-        VirtualFile _file_1 = virtualFS_2.find(name_1).next();
-        VirtualFile _file_2 = virtualFS_2.find(name_2).next();
+        VirtualFile readedFile1 = virtualFS_2.find(name_1).next();
+        VirtualFile readedFile2 = virtualFS_2.find(name_2).next();
 
         byte[] bytes;
 
-        randomAccessFile = _file_1.open("r");
+        randomAccessFile = readedFile1.open("r");
         bytes = new byte[(int) randomAccessFile.length()];
         randomAccessFile.read(bytes);
 
         assertEquals(content_1, new String(bytes));
 
-        randomAccessFile = _file_2.open("r");
+        randomAccessFile = readedFile2.open("r");
         bytes = new byte[(int) randomAccessFile.length()];
         randomAccessFile.read(bytes);
 
         assertEquals(content_2, new String(bytes));
+    }
+
+    @Test
+    void testReadLock() throws LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException, IOException {
+        VirtualFile virtualFile = virtualFS.touch(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+
+        virtualFile.open("r");
+
+        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.open("rw"));
+        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.remove());
+        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.move(destinationDirectory));
+
+        assertDoesNotThrow(() -> virtualFile.copy(destinationDirectory));
+        assertDoesNotThrow(() -> virtualFile.open("r"));
+    }
+
+    @Test
+    void testWriteLock() throws LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException, IOException {
+        VirtualFile virtualFile = virtualFS.touch(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+
+        virtualFile.open("rw");
+
+        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.open("rw"));
+        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.remove());
+        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.move(destinationDirectory));
+        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.open("rw"));
+        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.copy(destinationDirectory));
     }
 }

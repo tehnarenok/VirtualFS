@@ -62,4 +62,64 @@ class VirtualRandomAccessFileTest {
 
         assertEquals(content, randomAccessFile.readLine());
     }
+
+    @Test
+    void writeTwoFiles() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile_1 = new VirtualRandomAccessFile(sourceFile, "rw");
+        VirtualRandomAccessFile randomAccessFile_2 = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content_1 = "hello";
+        String content_2 = "))))))";
+
+        randomAccessFile_1.write(content_1.getBytes());
+        randomAccessFile_2.write(content_2.getBytes());
+
+        randomAccessFile_1.close();
+        randomAccessFile_2.close();
+
+        long position_1 = randomAccessFile_1.getFirstBlockPosition();
+        long position_2 = randomAccessFile_2.getFirstBlockPosition();
+
+        randomAccessFile_1 = new VirtualRandomAccessFile(sourceFile, "r", position_1);
+        randomAccessFile_2 = new VirtualRandomAccessFile(sourceFile, "r", position_2);
+
+        assertEquals(content_1, randomAccessFile_1.readLine());
+        assertEquals(content_2, randomAccessFile_2.readLine());
+    }
+
+    @Test
+    void deleteFile() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile_1 = new VirtualRandomAccessFile(sourceFile, "rw");
+        VirtualRandomAccessFile randomAccessFile_2 = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content_1 = "hello";
+        String content_2 = "))))))";
+
+        randomAccessFile_1.write(content_1.getBytes());
+
+        randomAccessFile_1.close();
+
+        long position_1 = randomAccessFile_1.getFirstBlockPosition();
+
+        randomAccessFile_1 = new VirtualRandomAccessFile(sourceFile, "rw", position_1);
+        randomAccessFile_1.setLength(0);
+
+        assertEquals(-1, randomAccessFile_1.getFirstBlockPosition());
+
+        randomAccessFile_2.write(content_2.getBytes());
+        randomAccessFile_2.close();
+
+        long position_2 = randomAccessFile_2.getFirstBlockPosition();
+
+        randomAccessFile_2 = new VirtualRandomAccessFile(sourceFile, "r", position_2);
+
+        assertEquals(content_2, randomAccessFile_2.readLine());
+        assertEquals(position_1, position_2);
+    }
 }

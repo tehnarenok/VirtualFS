@@ -203,12 +203,19 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
         VirtualRandomAccessFileCloseListener onClose = (firstBlockPosition) -> {
             lock.unlock();
             contentPosition = firstBlockPosition;
+            if(mode.equals("rw")) {
+                rootDirectory.isModifying.set(false);
+            }
         };
 
         ModifiedListener onModify = () -> {
             modifiedAt = new Date();
             rootDirectory.save();
         };
+
+        if(mode.equals("rw")) {
+            rootDirectory.isModifying.set(true);
+        }
 
         VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(
                 getSourceFile(),
@@ -228,11 +235,18 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
 
         VirtualRandomAccessFileCloseListener onClose = (firstBlockPosition) -> {
             contentPosition = firstBlockPosition;
+            if(mode.equals("rw")) {
+                rootDirectory.isModifying.set(false);
+            }
         };
 
         ModifiedListener onModify = () -> {
             modifiedAt = new Date();
         };
+
+        if(mode.equals("rw")) {
+            rootDirectory.isModifying.set(true);
+        }
 
         return new VirtualRandomAccessFile(
                 getSourceFile(),

@@ -1,5 +1,6 @@
 import exceptions.*;
 import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -14,12 +15,19 @@ public class MultiThreadVirtualDirectoryTest {
     @Rule
     public TemporaryFolder folder = TemporaryFolder.builder().assureDeletion().build();
 
-    @Test
-    public void writeFile_deleteDirectory() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
+    private VirtualFS virtualFS;
+    private File sourceFile;
 
+    @BeforeEach
+    public void setup() throws IOException, ClassNotFoundException {
+        folder.create();
+        sourceFile = folder.newFile(name);
+        virtualFS = new VirtualFS(sourceFile);
+    }
+
+    @Test
+    public void writeFile_deleteDirectory() throws IOException,
+            LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
 
@@ -33,11 +41,8 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void writeFile_copyDirectory() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    public void writeFile_copyDirectory() throws IOException,
+            LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
@@ -52,11 +57,8 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void writeFile_moveDirectory() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    public void writeFile_moveDirectory() throws IOException, LockedVirtualFSNode,
+            NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
@@ -71,11 +73,8 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void openFile_touchNearby() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    public void openFile_touchNearby() throws IOException, LockedVirtualFSNode,
+            NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
@@ -86,11 +85,8 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void openFile_mkdirNearby() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    public void openFile_mkdirNearby() throws IOException,
+            LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
 
@@ -100,11 +96,8 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void readFile_deleteDirectory() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    public void readFile_deleteDirectory() throws IOException, LockedVirtualFSNode,
+            NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
 
@@ -118,11 +111,8 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void readFile_copyDirectory() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    public void readFile_copyDirectory() throws IOException, LockedVirtualFSNode,
+            NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
@@ -133,11 +123,8 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void readFile_moveDirectory() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
-        folder.create();
-        File sourceFile = folder.newFile(name);
-        VirtualFS virtualFS = new VirtualFS(sourceFile);
-
+    public void readFile_moveDirectory() throws IOException, LockedVirtualFSNode,
+            NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
