@@ -1,29 +1,42 @@
-import exceptions.UnremovableVirtualNode;
+import exceptions.*;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.*;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class VirtualFile extends VirtualFSNode {
+public class VirtualFile extends VirtualFSNode implements Serializable {
     final private Date createdAt;
     private Date modifiedAt;
-    private byte[] content;
+    private long contentPosition;
 
-    public VirtualFile(String name) {
-        this(name, null, new byte[]{});
+    transient private ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
+    public VirtualFile(@NotNull String name) {
+        this(name, null, -1);
     }
 
-    public VirtualFile(String name, VirtualDirectory rootDirectory) {
-        this(name, rootDirectory, new byte[]{});
+    public VirtualFile(@NotNull String name, @NotNull VirtualDirectory rootDirectory) {
+        this(name, rootDirectory, -1);
     }
 
-    protected VirtualFile(String name, VirtualDirectory rootDirectory, byte[] content) {
+    protected VirtualFile(
+            @NotNull String name,
+            VirtualDirectory rootDirectory,
+            long contentPosition) {
         super(name, rootDirectory);
-        this.content = content;
+        this.contentPosition = contentPosition;
         this.createdAt = new Date();
         this.modifiedAt = this.createdAt;
     }
 
-    public byte[] getContent() {
-        return content;
+    private void readObject(@NotNull ObjectInputStream inputStream) throws IOException, ClassNotFoundException {
+        inputStream.defaultReadObject();
+        readWriteLock = new ReentrantReadWriteLock();
+        isDeleted = false;
     }
 
     public Date getCreatedAt() {
@@ -35,36 +48,198 @@ public class VirtualFile extends VirtualFSNode {
     }
 
     @Override
-    public void rename(String name) {
+    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+        if(isDeleted) throw new VirtualFSNodeIsDeleted();
+        Lock lock = tryWriteLock();
+        if(rootDirectory != null) rootDirectory.isModifying.set(true);
         super.rename(name);
-        this.modifiedAt = new Date();
+        modifiedAt = new Date();
+        lock.unlock();
+        if(rootDirectory != null) rootDirectory.isModifying.set(false);
+        if(rootDirectory != null) rootDirectory.save();
     }
 
     @Override
-    public void remove() throws UnremovableVirtualNode {
+    public void remove()
+            throws UnremovableVirtualNode, OverlappingVirtualFileLockException,
+            IOException, NullVirtualFS, LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+        remove(false, true);
+    }
+
+    void remove(@NotNull boolean isLocked, @NotNull boolean deleteFromRoot)
+            throws UnremovableVirtualNode, OverlappingVirtualFileLockException,
+            IOException, NullVirtualFS, LockedVirtualFSNode, VirtualFSNodeIsDeleted {
         super.remove();
-        this.rootDirectory.remove(this);
+        List<Lock> locks = new ArrayList<>();
+        if(!isLocked) {
+            locks.add(tryWriteLock());
+            try {
+                locks.add(rootDirectory.tryWriteLockFiles());
+            } catch (LockedVirtualFSNode e) {
+                locks.forEach(Lock::unlock);
+                throw e;
+            }
+        }
+        if(rootDirectory != null)rootDirectory.isModifying.set(true);
+        VirtualRandomAccessFile randomAccessFile = openLocked("rw");
+        randomAccessFile.setLength(0);
+        randomAccessFile.close();
+        if(deleteFromRoot) {
+            rootDirectory.remove(this);
+        }
+        isDeleted = true;
+        locks.forEach(Lock::unlock);
+        if(rootDirectory != null) rootDirectory.isModifying.set(false);
+        if(rootDirectory != null) rootDirectory.save();
     }
 
     @Override
-    public void move(VirtualDirectory destinationDirectory) {
-        this.rootDirectory.remove(this);
+    public void move(@NotNull VirtualDirectory destinationDirectory)
+            throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+        if(isDeleted) throw new VirtualFSNodeIsDeleted();
+        Lock lock = tryWriteLock();
+        Lock directoryLock;
+        try {
+            directoryLock = destinationDirectory.tryWriteLockFiles();
+        } catch (LockedVirtualFSNode e) {
+            lock.unlock();
+            throw e;
+        }
+        if(rootDirectory != null)rootDirectory.isModifying.set(true);
+        rootDirectory.remove(this);
         destinationDirectory.paste(this);
+        lock.unlock();
+        directoryLock.unlock();
+        if(rootDirectory != null)rootDirectory.isModifying.set(false);
+        if(rootDirectory != null) rootDirectory.save();
     }
 
-    protected VirtualFile clone() {
+    VirtualFile clone(@NotNull VirtualDirectory destinationDirectory)
+            throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException,
+            IOException, VirtualFSNodeIsDeleted {
+        if(isDeleted) throw new VirtualFSNodeIsDeleted();
         VirtualFile clonedFile = new VirtualFile(
                 this.name,
-                this.rootDirectory,
-                this.content
+                destinationDirectory
         );
+
+        if(contentPosition != -1) {
+            VirtualRandomAccessFile randomAccessFile = this.open("r");
+            byte[] bytes = new byte[(int) randomAccessFile.length()];
+            randomAccessFile.read(bytes);
+            randomAccessFile.close();
+
+            randomAccessFile = clonedFile.open("rw");
+            randomAccessFile.write(bytes);
+            randomAccessFile.close();
+        }
 
         return clonedFile;
     }
 
-    public VirtualFile copy(VirtualDirectory destinationDirectory) {
-        VirtualFile copiedFile = this.clone();
-        copiedFile.move(destinationDirectory);
+    public VirtualFile copy(@NotNull VirtualDirectory destinationDirectory)
+            throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException,
+            IOException, VirtualFSNodeIsDeleted {
+        Lock lock = tryReadLock();
+        Lock directoryLock;
+        try {
+            directoryLock = destinationDirectory.tryWriteLockFiles();
+        } catch (LockedVirtualFSNode e) {
+            lock.unlock();
+            throw e;
+        }
+        if(rootDirectory != null) destinationDirectory.isModifying.set(true);
+        VirtualFile copiedFile = this.clone(destinationDirectory);
+        destinationDirectory.paste(copiedFile);
+        lock.unlock();
+        directoryLock.unlock();
+        if(rootDirectory != null) destinationDirectory.isModifying.set(false);
+        if(rootDirectory != null) rootDirectory.save();
         return copiedFile;
+    }
+
+    Lock tryWriteLock() throws LockedVirtualFSNode {
+        if(readWriteLock.isWriteLockedByCurrentThread()) {
+            throw new LockedVirtualFSNode();
+        }
+        Lock lock = readWriteLock.writeLock();
+        boolean isLocked = lock.tryLock();
+        if(!isLocked) {
+            throw new LockedVirtualFSNode();
+        }
+        return lock;
+    }
+
+    Lock tryReadLock() throws LockedVirtualFSNode {
+        if(readWriteLock.isWriteLockedByCurrentThread()) {
+            throw new LockedVirtualFSNode();
+        }
+        Lock lock = readWriteLock.readLock();
+        boolean isLocked = lock.tryLock();
+        if(!isLocked) {
+            throw new LockedVirtualFSNode();
+        }
+        return lock;
+    }
+
+    public VirtualRandomAccessFile open(@NotNull String mode) throws IOException, OverlappingVirtualFileLockException,
+            NullVirtualFS, LockedVirtualFSNode {
+        Lock lock;
+
+        switch (mode) {
+            case "r": {
+                lock = tryReadLock();
+                break;
+            }
+            case "rw": {
+                lock = tryWriteLock();
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Illegal mode \"" + mode + "\" must be one of " + "\"r\", \"rw\"");
+            }
+        }
+
+        VirtualRandomAccessFileCloseListener onClose = (firstBlockPosition) -> {
+            lock.unlock();
+            contentPosition = firstBlockPosition;
+        };
+
+        ModifiedListener onModify = () -> {
+            modifiedAt = new Date();
+            rootDirectory.save();
+        };
+
+        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(
+                getSourceFile(),
+                mode,
+                contentPosition,
+                onClose,
+                onModify
+        );
+
+        return randomAccessFile;
+    }
+
+    private VirtualRandomAccessFile openLocked(@NotNull String mode) throws IOException, NullVirtualFS {
+        if(!mode.equals("r") && !mode.equals("rw")) {
+            throw new IllegalArgumentException("Illegal mode \"" + mode + "\" must be one of " + "\"r\", \"rw\"");
+        }
+
+        VirtualRandomAccessFileCloseListener onClose = (firstBlockPosition) -> {
+            contentPosition = firstBlockPosition;
+        };
+
+        ModifiedListener onModify = () -> {
+            modifiedAt = new Date();
+        };
+
+        return new VirtualRandomAccessFile(
+                getSourceFile(),
+                mode,
+                contentPosition,
+                onClose,
+                onModify
+        );
     }
 }

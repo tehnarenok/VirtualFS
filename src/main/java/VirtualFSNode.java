@@ -1,14 +1,23 @@
-import exceptions.UnremovableVirtualNode;
+import exceptions.*;
+import org.jetbrains.annotations.NotNull;
 
-public class VirtualFSNode {
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+
+public abstract class VirtualFSNode implements Serializable {
     protected String name;
     protected VirtualDirectory rootDirectory;
+    transient boolean isDeleted = false;
+    transient protected VirtualFS virtualFS;
 
-    public VirtualFSNode(String name) {
+    public VirtualFSNode(@NotNull String name) {
         this(name, null);
     }
 
-    protected VirtualFSNode(String name, VirtualDirectory rootDirectory) {
+    protected VirtualFSNode(
+            @NotNull String name,
+            VirtualDirectory rootDirectory) {
         this.name = name;
         this.rootDirectory = rootDirectory;
     }
@@ -17,7 +26,7 @@ public class VirtualFSNode {
         return this.name;
     }
 
-    public void rename(String name) {
+    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
         this.name = name;
     }
 
@@ -25,11 +34,31 @@ public class VirtualFSNode {
         return this.rootDirectory;
     }
 
-    public void remove() throws UnremovableVirtualNode {
+    public void remove()
+            throws UnremovableVirtualNode, OverlappingVirtualFileLockException,
+            IOException, NullVirtualFS, LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+        if(this.isDeleted) {
+            throw new VirtualFSNodeIsDeleted();
+        }
         if(this.rootDirectory == null) {
             throw new UnremovableVirtualNode();
         }
     }
 
-    public void move(VirtualDirectory destinationDirectory) {}
+    public void move(@NotNull VirtualDirectory destinationDirectory)
+            throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {}
+
+    protected File getSourceFile() throws NullVirtualFS {
+        return getVirtualFS().sourceFile;
+    }
+
+    protected VirtualFS getVirtualFS() throws NullVirtualFS {
+        if(virtualFS != null) return virtualFS;
+        if(rootDirectory != null) {
+            virtualFS = rootDirectory.getVirtualFS();
+            return virtualFS;
+        }
+
+        throw new NullVirtualFS();
+    }
 }

@@ -1,11 +1,7 @@
 package exceptions;
 
-public class UnremovableVirtualNode extends Exception {
+public class UnremovableVirtualNode extends VFSException {
     public UnremovableVirtualNode() {
-        this("This node cannot be deleted");
-    }
-
-    public UnremovableVirtualNode(String message) {
-        super(message);
+        super("This node cannot be deleted");
     }
 }

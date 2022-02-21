@@ -1,6 +1,11 @@
-import exceptions.UnremovableVirtualNode;
+import exceptions.*;
+import org.junit.Rule;
 import org.junit.jupiter.api.Test;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.regex.Pattern;
@@ -10,8 +15,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class VirtualDirectoryTest {
     final String name = "test_name";
 
+    @Rule
+    public TemporaryFolder folder = TemporaryFolder.builder().assureDeletion().build();
+
     @Test
-     void initialization() {
+     void initialization() throws LockedVirtualFSNode {
         VirtualDirectory directory = new VirtualDirectory(name);
 
         assertNull(directory.getRootDirectory());
@@ -36,7 +44,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void getDirectories() {
+    void getDirectories() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualDirectory virtualDirectory_1 = rootDirectory.mkdir(name);
 
@@ -54,7 +62,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void getFiles() {
+    void getFiles() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualFile virtualFile_1 = rootDirectory.touch(name);
 
@@ -72,7 +80,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void mkdir() {
+    void mkdir() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
         VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
@@ -86,7 +94,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void touch() {
+    void touch() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
         VirtualFile virtualFile = rootDirectory.touch(name);
@@ -103,13 +111,13 @@ class VirtualDirectoryTest {
     void removeWithNullRootDirectory() {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
-        Exception exception = assertThrows(UnremovableVirtualNode.class, rootDirectory::remove);
+        UnremovableVirtualNode exception = assertThrows(UnremovableVirtualNode.class, rootDirectory::remove);
 
         assertTrue(exception.getMessage().contains("This node cannot be deleted"));
     }
 
     @Test
-    void removeChildDirectory() {
+    void removeChildDirectory() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
 
@@ -122,7 +130,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void removeChildFile() {
+    void removeChildFile() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualFile virtualFile = rootDirectory.touch(name);
 
@@ -135,7 +143,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void removeSelf() {
+    void removeSelf() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
 
@@ -150,7 +158,25 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void move() {
+    void removeDeleted() throws LockedVirtualFSNode {
+        VirtualDirectory rootDirectory = new VirtualDirectory(name);
+        VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
+
+        assertDoesNotThrow(() -> virtualDirectory.remove());
+        assertThrows(VirtualFSNodeIsDeleted.class, () -> virtualDirectory.remove());
+    }
+
+    @Test
+    void removeRoot() throws IOException, ClassNotFoundException {
+        folder.create();
+        File sourceFile = folder.newFile(name);
+        VirtualFS virtualFS = new VirtualFS(sourceFile);
+
+        assertThrows(UnremovableVirtualNode.class, () -> virtualFS.getRootDirectory().remove());
+    }
+
+    @Test
+    void move() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualDirectory destinationDirectory = new VirtualDirectory(name);
 
@@ -172,7 +198,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void copy() {
+    void copy() throws VFSException, IOException {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualDirectory destinationDirectory = new VirtualDirectory(name);
 
@@ -202,7 +228,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void copyWithChildren() {
+    void copyWithChildren() throws VFSException, IOException{
         String fileName = "test file name";
         String directoryName = "test directory name";
 
@@ -240,7 +266,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void findSubName() {
+    void findSubName() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
         VirtualFile virtualFile = rootDirectory.touch("123");
@@ -264,7 +290,12 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void recursiveFindSubName() {
+    void crashIterator() {
+
+    }
+
+    @Test
+    void recursiveFindSubName() throws LockedVirtualFSNode {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
         VirtualFile virtualFile = rootDirectory.touch("123");
@@ -282,7 +313,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void findByPattern() {
+    void findByPattern() throws LockedVirtualFSNode {
         Pattern pattern = Pattern.compile("^test.*\\.java$");
 
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
@@ -299,5 +330,106 @@ class VirtualDirectoryTest {
         assertTrue(iterator.hasNext());
         assertEquals(testJava, iterator.next());
         assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    void testLock() throws IOException, VFSException, ClassNotFoundException {
+        folder.create();
+        File sourceFile = folder.newFile(name);
+        VirtualFS virtualFS = new VirtualFS(sourceFile);
+
+        VirtualDirectory directory = virtualFS.mkdir(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+        VirtualFile file = directory.touch(name);
+
+        VirtualRandomAccessFile randomAccessFile = file.open("rw");
+
+        assertThrows(LockedVirtualFSNode.class, () -> directory.move(destinationDirectory));
+
+        randomAccessFile.close();
+
+        assertDoesNotThrow(() -> directory.move(destinationDirectory));
+        return;
+    }
+
+    @Test
+    void importFromVirtualFS() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException, VirtualFSNodeIsDeleted {
+        folder.create();
+        File sourceFile_1 = folder.newFile(name + "1");
+        File sourceFile_2 = folder.newFile(name + "2");
+        VirtualFS virtualFS_1 = new VirtualFS(sourceFile_1);
+        VirtualFS virtualFS_2 = new VirtualFS(sourceFile_2);
+
+        virtualFS_1.mkdir(name).touch(name);
+        virtualFS_1.touch(name);
+
+        virtualFS_2.getRootDirectory().importContent(virtualFS_1.getRootDirectory());
+
+        assertEquals(
+                virtualFS_1.getFiles().size(),
+                virtualFS_2.getFiles().size()
+        );
+
+        assertEquals(
+                virtualFS_1.getDirectories().size(),
+                virtualFS_2.getDirectories().size()
+        );
+    }
+
+    @Test
+    void importFromVirtualFSWithContent() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException, VirtualFSNodeIsDeleted {
+        folder.create();
+        File sourceFile_1 = folder.newFile(name + "1");
+        File sourceFile_2 = folder.newFile(name + "2");
+        VirtualFS virtualFS_1 = new VirtualFS(sourceFile_1);
+        VirtualFS virtualFS_2 = new VirtualFS(sourceFile_2);
+
+        VirtualFile file = virtualFS_1.touch(name);
+        VirtualRandomAccessFile randomAccessFile = file.open("rw");
+        randomAccessFile.write("Hello".getBytes());
+
+        assertThrows(
+                LockedVirtualFSNode.class,
+                () -> virtualFS_2.getRootDirectory().importContent(virtualFS_1.getRootDirectory())
+        );
+
+        randomAccessFile.close();
+
+        virtualFS_2.getRootDirectory().importContent(virtualFS_1.getRootDirectory());
+
+        randomAccessFile = virtualFS_2.getFiles().get(0).open("r");
+
+        assertEquals("Hello", randomAccessFile.readLine());
+    }
+
+    @Test
+    void importFromRealFileSystem() throws IOException, ClassNotFoundException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException, VirtualFSNodeIsDeleted {
+        folder.create();
+        File sourceFile = folder.newFile(name);
+        VirtualFS virtualFS = new VirtualFS(sourceFile);
+
+        String content = "Hello world, I'm in virtual system)))";
+        byte[] bytes = content.getBytes();
+
+        File sourceFolder = folder.newFolder("test_folder");
+
+        String fileName = "test_file";
+
+        File file = new File(sourceFolder, fileName);
+        FileOutputStream out = new FileOutputStream(file);
+        out.write(bytes);
+        out.close();
+
+        virtualFS.getRootDirectory().importContent(sourceFolder);
+
+        assertEquals(1, virtualFS.getFiles().size());
+
+        VirtualFile virtualFile = virtualFS.getFiles().get(0);
+
+        assertEquals(fileName, virtualFile.getName());
+
+        VirtualRandomAccessFile virtualRandomAccessFile = virtualFile.open("r");
+
+        assertEquals(content, virtualRandomAccessFile.readLine());
     }
 }
