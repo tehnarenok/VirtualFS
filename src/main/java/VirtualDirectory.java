@@ -209,10 +209,12 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         rootDirectory.isModifying.set(true);
         if(!destinationDirectory.checkForUniqueDirectoryName(this)) {
             locks.forEach(Lock::unlock);
+            rootDirectory.isModifying.set(false);
             throw new NotUniqueName();
         }
         rootDirectory.remove(this);
         destinationDirectory.paste(this);
+        rootDirectory.isModifying.set(false);
         locks.forEach(Lock::unlock);
         save();
     }

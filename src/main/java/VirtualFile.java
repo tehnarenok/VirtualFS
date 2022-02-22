@@ -176,12 +176,12 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
             lock.unlock();
             throw e;
         }
-        if(rootDirectory != null) destinationDirectory.isModifying.set(true);
+        destinationDirectory.isModifying.set(true);
         VirtualFile copiedFile = this.clone(destinationDirectory);
         destinationDirectory.paste(copiedFile);
         lock.unlock();
         directoryLock.unlock();
-        if(rootDirectory != null) destinationDirectory.isModifying.set(false);
+        destinationDirectory.isModifying.set(false);
         if(rootDirectory != null) rootDirectory.save();
         return copiedFile;
     }
