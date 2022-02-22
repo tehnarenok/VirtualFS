@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 public class VirtualDirectory extends VirtualFSNode implements Serializable {
-    AtomicBoolean isModifying = new AtomicBoolean(false);
+    transient AtomicBoolean isModifying = new AtomicBoolean(false);
     private List<VirtualDirectory> directories;
     private List<VirtualFile> files;
 
@@ -463,6 +463,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
         for (VirtualDirectory virtualDirectory : directory.directories) {
             if(!checkForUniqueDirectoryName(virtualDirectory.getName())) {
+                locks.forEach(Lock::unlock);
                 throw new NotUniqueName();
             }
             paste(virtualDirectory.clone(this));
@@ -470,6 +471,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
         for (VirtualFile virtualFile : directory.files) {
             if(!checkForUniqueFileName(virtualFile.getName())) {
+                locks.forEach(Lock::unlock);
                 throw new NotUniqueName();
             }
             paste(virtualFile.clone(this));
@@ -491,6 +493,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         for (final File fileEntry : Objects.requireNonNull(folder.listFiles())) {
             if (fileEntry.isDirectory()) {
                 if(!checkForUniqueDirectoryName(fileEntry.getName())) {
+                    locks.forEach(Lock::unlock);
                     throw new NotUniqueName();
                 }
                 VirtualDirectory directory = new VirtualDirectory(fileEntry.getName());
@@ -498,6 +501,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
                 directory.importContent(fileEntry);
             } else {
                 if(!checkForUniqueFileName(fileEntry.getName())) {
+                    locks.forEach(Lock::unlock);
                     throw new NotUniqueName();
                 }
                 VirtualFile file = new VirtualFile(fileEntry.getName());

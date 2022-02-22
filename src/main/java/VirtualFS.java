@@ -60,13 +60,18 @@ public class VirtualFS {
         rootDirectory.virtualFS = this;
     }
 
-    public void close() throws IOException {
+    public void close() throws IOException, LockedVirtualFSNode {
+        rootDirectory.tryWriteLockDown();
         virtualRandomAccessFile.close();
     }
 
     @Override
     protected void finalize() throws Throwable {
-        close();
+        try {
+            close();
+        } catch (Throwable throwable) {
+
+        }
         super.finalize();
     }
 
