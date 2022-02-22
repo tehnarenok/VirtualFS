@@ -128,7 +128,7 @@ class VirtualFileTest {
 
         assertDoesNotThrow(() -> virtualFile.remove());
 
-        assertThrows(VirtualFSNodeIsDeleted.class, () -> virtualFile.remove());
+        assertThrows(VirtualFSNodeIsDeleted.class, virtualFile::remove);
     }
 
     @Test
@@ -302,7 +302,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void testReadWriteLong() throws IOException, ClassNotFoundException, OverlappingVirtualFileLockException, NullVirtualFS, LockedVirtualFSNode {
+    void testReadWriteLong() throws IOException, OverlappingVirtualFileLockException, NullVirtualFS, LockedVirtualFSNode {
         long content = 10;
 
         VirtualFile file = virtualFS.touch(name);
@@ -339,7 +339,7 @@ class VirtualFileTest {
         assertEquals(content, new String(bytes));
     }
 
-    private class RunnableWriter implements Runnable {
+    private static class RunnableWriter implements Runnable {
         public VirtualFile file;
         public String content;
 
@@ -354,17 +354,11 @@ class VirtualFileTest {
                 VirtualRandomAccessFile randomAccessFile = file.open("rw");
                 randomAccessFile.write(content.getBytes());
                 randomAccessFile.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (OverlappingVirtualFileLockException e) {
-                e.printStackTrace();
-            } catch (NullVirtualFS e) {
-                e.printStackTrace();
-            } catch (LockedVirtualFSNode e) {
+            } catch (IOException | OverlappingVirtualFileLockException | NullVirtualFS | LockedVirtualFSNode e) {
                 e.printStackTrace();
             }
         }
-    };
+    }
 
     @Test
     void testReadWriteParrarel() throws IOException, ClassNotFoundException, OverlappingVirtualFileLockException, NullVirtualFS, InterruptedException, LockedVirtualFSNode {
@@ -417,7 +411,7 @@ class VirtualFileTest {
         virtualFile.open("r");
 
         assertThrows(LockedVirtualFSNode.class, () -> virtualFile.open("rw"));
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.remove());
+        assertThrows(LockedVirtualFSNode.class, virtualFile::remove);
         assertThrows(LockedVirtualFSNode.class, () -> virtualFile.move(destinationDirectory));
 
         assertDoesNotThrow(() -> virtualFile.copy(destinationDirectory));
@@ -432,7 +426,7 @@ class VirtualFileTest {
         virtualFile.open("rw");
 
         assertThrows(LockedVirtualFSNode.class, () -> virtualFile.open("rw"));
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.remove());
+        assertThrows(LockedVirtualFSNode.class, virtualFile::remove);
         assertThrows(LockedVirtualFSNode.class, () -> virtualFile.move(destinationDirectory));
         assertThrows(LockedVirtualFSNode.class, () -> virtualFile.open("rw"));
         assertThrows(LockedVirtualFSNode.class, () -> virtualFile.copy(destinationDirectory));

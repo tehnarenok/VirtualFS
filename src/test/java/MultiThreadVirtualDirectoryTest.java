@@ -16,12 +16,11 @@ public class MultiThreadVirtualDirectoryTest {
     public TemporaryFolder folder = TemporaryFolder.builder().assureDeletion().build();
 
     private VirtualFS virtualFS;
-    private File sourceFile;
 
     @BeforeEach
     public void setup() throws IOException, ClassNotFoundException {
         folder.create();
-        sourceFile = folder.newFile(name);
+        File sourceFile = folder.newFile(name);
         virtualFS = new VirtualFS(sourceFile);
     }
 
@@ -76,10 +75,10 @@ public class MultiThreadVirtualDirectoryTest {
     public void openFile_touchNearby() throws IOException, LockedVirtualFSNode,
             NullVirtualFS, OverlappingVirtualFileLockException {
         VirtualDirectory directory = virtualFS.mkdir(name);
-        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+        virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
 
-        VirtualRandomAccessFile randomAccessFile = file.open("rw");
+        file.open("rw");
 
         assertDoesNotThrow(() -> directory.touch(name));
     }
@@ -90,7 +89,7 @@ public class MultiThreadVirtualDirectoryTest {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
 
-        VirtualRandomAccessFile randomAccessFile = file.open("rw");
+        file.open("rw");
 
         assertDoesNotThrow(() -> directory.mkdir(name));
     }
@@ -103,7 +102,7 @@ public class MultiThreadVirtualDirectoryTest {
 
         VirtualRandomAccessFile randomAccessFile = file.open("r");
 
-        assertThrows(LockedVirtualFSNode.class, () -> directory.remove());
+        assertThrows(LockedVirtualFSNode.class, directory::remove);
 
         randomAccessFile.close();
 
@@ -117,7 +116,7 @@ public class MultiThreadVirtualDirectoryTest {
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
 
-        VirtualRandomAccessFile randomAccessFile = file.open("r");
+        file.open("r");
 
         assertDoesNotThrow(() -> directory.copy(destinationDirectory));
     }

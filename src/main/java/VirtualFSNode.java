@@ -11,10 +11,6 @@ public abstract class VirtualFSNode implements Serializable {
     transient boolean isDeleted = false;
     transient protected VirtualFS virtualFS;
 
-    public VirtualFSNode(@NotNull String name) {
-        this(name, null);
-    }
-
     protected VirtualFSNode(
             @NotNull String name,
             VirtualDirectory rootDirectory) {

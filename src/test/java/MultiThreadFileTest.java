@@ -15,12 +15,11 @@ public class MultiThreadFileTest {
     public TemporaryFolder folder = TemporaryFolder.builder().assureDeletion().build();
 
     private VirtualFS virtualFS;
-    private File sourceFile;
 
     @BeforeEach
     public void setup() throws IOException, ClassNotFoundException {
         folder.create();
-        sourceFile = folder.newFile(name);
+        File sourceFile = folder.newFile(name);
         virtualFS = new VirtualFS(sourceFile);
     }
 
@@ -31,7 +30,7 @@ public class MultiThreadFileTest {
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("r");
 
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.remove());
+        assertThrows(LockedVirtualFSNode.class, virtualFile::remove);
 
         randomAccessFile.close();
 
@@ -87,7 +86,7 @@ public class MultiThreadFileTest {
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.remove());
+        assertThrows(LockedVirtualFSNode.class, virtualFile::remove);
 
         randomAccessFile.close();
 

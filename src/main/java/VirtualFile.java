@@ -66,7 +66,7 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
         remove(false, true);
     }
 
-    void remove(@NotNull boolean isLocked, @NotNull boolean deleteFromRoot)
+    void remove(boolean isLocked, boolean deleteFromRoot)
             throws UnremovableVirtualNode, OverlappingVirtualFileLockException,
             IOException, NullVirtualFS, LockedVirtualFSNode, VirtualFSNodeIsDeleted {
         super.remove();
@@ -105,8 +105,8 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
             lock.unlock();
             throw e;
         }
-        if(rootDirectory != null)rootDirectory.isModifying.set(true);
-        rootDirectory.remove(this);
+        if(rootDirectory != null) rootDirectory.isModifying.set(true);
+        if(rootDirectory != null) rootDirectory.remove(this);
         destinationDirectory.paste(this);
         lock.unlock();
         directoryLock.unlock();
@@ -217,15 +217,13 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
             rootDirectory.isModifying.set(true);
         }
 
-        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(
+        return new VirtualRandomAccessFile(
                 getSourceFile(),
                 mode,
                 contentPosition,
                 onClose,
                 onModify
         );
-
-        return randomAccessFile;
     }
 
     private VirtualRandomAccessFile openLocked(@NotNull String mode) throws IOException, NullVirtualFS {
@@ -240,9 +238,7 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
             }
         };
 
-        ModifiedListener onModify = () -> {
-            modifiedAt = new Date();
-        };
+        ModifiedListener onModify = () -> modifiedAt = new Date();
 
         if(mode.equals("rw")) {
             rootDirectory.isModifying.set(true);

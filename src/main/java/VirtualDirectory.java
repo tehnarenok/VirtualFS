@@ -117,7 +117,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         remove(false, true);
     }
 
-    void remove(@NotNull boolean isLocked, @NotNull boolean deleteFromRoot)
+    void remove(boolean isLocked, boolean deleteFromRoot)
             throws UnremovableVirtualNode, OverlappingVirtualFileLockException,
             IOException, NullVirtualFS, LockedVirtualFSNode, VirtualFSNodeIsDeleted {
         super.remove();
@@ -234,15 +234,13 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         return copiedDirectory;
     }
 
-    public Iterator<VirtualFile> find(
+    Iterator<VirtualFile> find(
             @NotNull Predicate<VirtualFile> match,
-            @NotNull Boolean isRecursive) {
-        Iterator<VirtualFile> it = new VirtualFileIterator(match, isRecursive, this);
-
-        return it;
+            boolean isRecursive) {
+        return new VirtualFileIterator(match, isRecursive, this);
     }
 
-    public Iterator<VirtualFile> find(@NotNull String subName, @NotNull Boolean isRecursive) {
+    public Iterator<VirtualFile> find(@NotNull String subName, boolean isRecursive) {
         return find((VirtualFile file) -> file.getName().contains(subName), isRecursive);
     }
 
@@ -250,7 +248,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         return find(subName, false);
     }
 
-    public Iterator<VirtualFile> find(@NotNull Pattern pattern, @NotNull Boolean isRecursive) {
+    public Iterator<VirtualFile> find(@NotNull Pattern pattern, boolean isRecursive) {
         return find((VirtualFile file) -> pattern.matcher(file.getName()).matches(), isRecursive);
     }
 
@@ -308,16 +306,9 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
             throw new LockedVirtualFSNode();
         }
 
-        locks.add(tryLockNameWrite());
-
         try {
+            locks.add(tryLockNameWrite());
             locks.add(tryWriteLockFiles());
-        } catch (LockedVirtualFSNode e) {
-            locks.forEach(Lock::unlock);
-            throw e;
-        }
-
-        try {
             locks.add(tryWriteLockDirectories());
         } catch (LockedVirtualFSNode e) {
             locks.forEach(Lock::unlock);
@@ -489,6 +480,36 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         save();
     }
 
+    public void exportContent(@NotNull File folder) throws IOException, LockedVirtualFSNode,
+            NullVirtualFS, OverlappingVirtualFileLockException {
+        if (!folder.isDirectory()) {
+            throw new InvalidObjectException(String.format("File is not a directory: %s", folder.getAbsolutePath()));
+        }
+
+        List<Lock> locks = new ArrayList<>();
+        locks = tryReadLockDown(locks);
+
+        for (VirtualDirectory directory : directories) {
+            File newDirectory = new File(folder, directory.getName());
+            if(newDirectory.mkdir()) {
+                directory.exportContent(newDirectory);
+            }
+        }
+
+        for(VirtualFile file : files) {
+            File newFile = new File(folder, file.getName());
+            OutputStream out = new FileOutputStream(newFile);
+            VirtualRandomAccessFile virtualRandomAccessFile = file.open("r");
+            byte[] b = new byte[(int) virtualRandomAccessFile.length()];
+            virtualRandomAccessFile.read(b);
+            virtualRandomAccessFile.close();
+            out.write(b);
+            out.close();
+        }
+
+        locks.forEach(Lock::unlock);
+    }
+
     protected void save() {
         try {
             if (rootDirectory != null) {
@@ -504,8 +525,8 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
             getVirtualFS().save();
 
             locks.forEach(Lock::unlock);
-        } catch (NullVirtualFS e) {}
-        catch (LockedVirtualFSNode e) {}
-        catch (IOException e) {}
+        } catch (Throwable throwable) {
+            return;
+        }
     }
 }

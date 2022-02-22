@@ -136,7 +136,7 @@ class VirtualFSTest {
     }
 
     @Test
-    void moveDirectoryToRootDirectory() throws IOException, ClassNotFoundException, LockedVirtualFSNode {
+    void moveDirectoryToRootDirectory() throws LockedVirtualFSNode {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualDirectory virtualDirectory  = directory.mkdir(name);
 

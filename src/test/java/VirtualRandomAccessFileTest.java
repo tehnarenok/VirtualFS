@@ -1,4 +1,3 @@
-import exceptions.*;
 import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.TemporaryFolder;
@@ -11,7 +10,7 @@ import java.io.OutputStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 class VirtualRandomAccessFileTest {
-    private String fileName = "test_file";
+    private final String fileName = "test_file";
 
     @Rule
     public TemporaryFolder folder = TemporaryFolder.builder().assureDeletion().build();
@@ -27,7 +26,7 @@ class VirtualRandomAccessFileTest {
                 0, 0, 0, 0, 0, 0, 0, 32, // Размер блока = 32
                 0, 0, 0, 0, 0, 0, 0, (byte) 0x2f,
                 -1, -1, -1, -1, -1, -1, -1, -1, // Конец данных
-                0, 0, 0, 0, 0, 0, 0, 8, // Размер даных
+                0, 0, 0, 0, 0, 0, 0, 8, // Размер данных
                 0, 0, 0, 0, 0, 0, 0, 8, // Последний блок
                 1, 2, 3, 4, 5, 6, 7, 8,
                 0, 0, 0, 0, 0, 0, 0, 0
@@ -61,6 +60,147 @@ class VirtualRandomAccessFileTest {
         randomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw", startPosition);
 
         assertEquals(content, randomAccessFile.readLine());
+    }
+
+    @Test
+    void length() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content = "hello";
+
+        randomAccessFile.write(content.getBytes());
+        randomAccessFile.flush();
+
+        assertEquals(content.getBytes().length, randomAccessFile.length());
+    }
+
+    @Test
+    void setLengthMore() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content = "hello";
+
+        randomAccessFile.write(content.getBytes());
+        randomAccessFile.flush();
+
+        assertEquals(content.getBytes().length, randomAccessFile.length());
+
+        randomAccessFile.setLength(content.getBytes().length + 10);
+
+        assertEquals(content.getBytes().length + 10, randomAccessFile.length());
+    }
+
+    @Test
+    void setLengthLess() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content = "hello";
+
+        randomAccessFile.write(content.getBytes());
+        randomAccessFile.flush();
+
+        assertEquals(content.getBytes().length, randomAccessFile.length());
+
+        randomAccessFile.setLength(content.getBytes().length - 2);
+
+        assertEquals(content.getBytes().length - 2, randomAccessFile.length());
+    }
+
+    @Test
+    void seek() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content = "hello";
+        String newContent = "llo";
+
+        randomAccessFile.write(content.getBytes());
+        randomAccessFile.flush();
+
+        randomAccessFile.seek(2);
+
+        assertEquals(2, randomAccessFile.getFilePointer());
+        assertEquals(newContent, randomAccessFile.readLine());
+    }
+
+    @Test
+    void seekLength() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content = "hello";
+
+        randomAccessFile.write(content.getBytes());
+        randomAccessFile.flush();
+
+        randomAccessFile.seek(randomAccessFile.length());
+        assertEquals(randomAccessFile.length(), randomAccessFile.getFilePointer());
+    }
+
+    @Test
+    void seekNegative() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content = "hello";
+
+        randomAccessFile.write(content.getBytes());
+        randomAccessFile.flush();
+
+        assertThrows(IOException.class, () -> randomAccessFile.seek(-1));
+    }
+
+    @Test
+    void seekMoreThanLength() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content = "hello";
+
+        randomAccessFile.write(content.getBytes());
+        randomAccessFile.flush();
+
+        assertDoesNotThrow(() -> randomAccessFile.seek(randomAccessFile.length() + 10));
+        assertEquals(randomAccessFile.length(), randomAccessFile.getFilePointer());
+    }
+
+    @Test
+    void rewrite() throws IOException {
+        folder.create();
+        File sourceFile = folder.newFile(fileName);
+
+        VirtualRandomAccessFile randomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw");
+
+        String content = "hello";
+        String newContent = "my first program";
+
+        randomAccessFile.write(content.getBytes());
+        randomAccessFile.flush();
+
+        randomAccessFile.seek(0);
+        randomAccessFile.write(newContent.getBytes());
+        randomAccessFile.flush();
+
+        randomAccessFile.seek(0);
+
+        assertEquals(newContent, randomAccessFile.readLine());
     }
 
     @Test

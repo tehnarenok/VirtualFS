@@ -11,16 +11,14 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
 
     // meta information
     private long size;
-    private long lastBlockPosition;
 
     // information about real file
     private long emptyBlockPosition = 8;
-    private RandomAccessFile sourceFile;
+    private final RandomAccessFile sourceFile;
 
     // information for navigation in real file
     private long currentBlockPosition;
     private long nextBlockPosition;
-    private long lastByteInBlockPosition;
 
     private long firstBlockPosition;
     private boolean isReadFirstBlockData;
@@ -37,15 +35,15 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
     // information about writing data
     private boolean isWriteData;
 
-    private VirtualRandomAccessFileCloseListener onClose;
-    private ModifiedListener onModify;
+    private final VirtualRandomAccessFileCloseListener onClose;
+    private final ModifiedListener onModify;
 
-    private class VirtualBlockInfo {
+    private static class VirtualBlockInfo {
         public long lastByteInBlockPosition;
         public long nextBlockPosition;
     }
 
-    private class VirtualFileMetaInformation {
+    private static class VirtualFileMetaInformation {
         public long size;
         public long lastBlockPosition;
     }
@@ -53,9 +51,9 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
     public VirtualRandomAccessFile(
             @NotNull File file,
             @NotNull String mode,
-            @NotNull long position,
-            @NotNull VirtualRandomAccessFileCloseListener onClose,
-            @NotNull ModifiedListener onModify
+            long position,
+            VirtualRandomAccessFileCloseListener onClose,
+            ModifiedListener onModify
     ) throws IOException {
         super(file, mode);
         this.sourceFile = new RandomAccessFile(file, mode);
@@ -69,7 +67,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
         this.readFirstBlock();
     }
 
-    // Констурктор для виртуального файла, который записан в память
+    // Конструктор для виртуального файла, который записан в память
     public VirtualRandomAccessFile(
             @NotNull File file,
             @NotNull String mode,
@@ -77,16 +75,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
         this(file, mode, position, null, null);
     }
 
-    public VirtualRandomAccessFile(
-            @NotNull File file,
-            @NotNull String mode,
-            VirtualRandomAccessFileCloseListener onClose,
-            ModifiedListener onModify
-    ) throws IOException {
-        this(file, mode, -1, onClose, null);
-    }
-
-    // Констурктор для виртуального файла, который еще не записан в память
+    // Конструктор для виртуального файла, который еще не записан в память
     public VirtualRandomAccessFile(@NotNull File file, @NotNull String mode) throws IOException {
         this(file, mode, -1, null, null);
     }
@@ -147,7 +136,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
         b[4] = (byte)((v >>> 24) & 0xFF);
         b[5] = (byte)((v >>> 16) & 0xFF);
         b[6] = (byte)((v >>> 8) & 0xFF);
-        b[7] = (byte)((v >>> 0) & 0xFF);
+        b[7] = (byte)((v) & 0xFF);
 
         return ByteBuffer.wrap(b);
     }
@@ -198,13 +187,18 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
         return size;
     }
 
+    @Override
+    public long getFilePointer() {
+        return position;
+    }
+
     public void readFirstBlock() throws IOException {
         buffer = null;
         bufferPosition = 0;
         position = 0;
         isWriteData = false;
 
-        // Проверка на существование вируального файла в памяти
+        // Проверка на существование виртуального файла в памяти
         if(firstBlockPosition == -1) {
             currentBlockPosition = -1;
             size = 0;
@@ -214,11 +208,9 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
             VirtualBlockInfo blockInfo = readBlockInfo(currentBlockPosition);
             VirtualFileMetaInformation metaInformation = readMetaInformation();
 
-            lastByteInBlockPosition = blockInfo.lastByteInBlockPosition;
             nextBlockPosition = blockInfo.nextBlockPosition;
 
             size = metaInformation.size;
-            lastBlockPosition = metaInformation.lastBlockPosition;
 
             isReadFirstBlockData = true;
 
@@ -259,7 +251,6 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
 
         if(currentBlockPosition != firstBlockPosition) {
             VirtualBlockInfo blockInfo = readBlockInfo(currentBlockPosition);
-            lastByteInBlockPosition = blockInfo.lastByteInBlockPosition;
             nextBlockPosition = blockInfo.nextBlockPosition;
         }
 
@@ -300,7 +291,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
 
     @Override
     public int read(
-            @NotNull byte[] b,
+            byte[] b,
             int off,
             int len) throws IOException {
         for(int i = off; i < len; i++) {
@@ -310,7 +301,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
     }
 
     @Override
-    public int read(@NotNull byte[] b) throws IOException {
+    public int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
@@ -335,14 +326,12 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
                 try {
                     writePosition = findFirstEmptyBlock();
                 } catch (OverlappingFileLockException exception) {
-                    writePosition = -1;
                     continue;
                 }
             }
 
             if(isWriteFirstBlock) {
                 firstBlockPosition = writePosition;
-                lastBlockPosition = writePosition;
             }
 
             try {
@@ -359,14 +348,12 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
                 }
             } catch (OverlappingFileLockException exception) {
                 lockCurrentBlock.release();
-                lockCurrentBlock = null;
 
                 if(lockLastBlock != null) {
                     lockLastBlock.release();
                     lockLastBlock = null;
                 }
 
-                if(isWriteNewBlock) writePosition = -1;
                 if(isWriteFirstBlock) firstBlockPosition = -1;
                 continue;
             }
@@ -377,7 +364,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
             // Записываем в старый блок
             fileChannel.write(ByteBuffer.wrap(buffer), writePosition);
 
-            //зменяем "ссылку" на конец в блоке, если записываем данные сверх
+            //изменяем "ссылку" на конец в блоке, если записываем данные сверх
             sourceFile.seek(currentBlockPosition);
             if(sourceFile.readLong() < writePosition + bufferPosition - 1) {
                 fileChannel.write(longToByteArray(writePosition + bufferPosition - 1), currentBlockPosition);
@@ -387,19 +374,19 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
             long saveWritingPosition = writePosition;
 
             if(!isWriteFirstBlock) {
-                //зменяем в мета информации ссылку на последний блок
-                // если пишем первый блок, то этого делать не надо, т.к. в буфер перезатрет эти изменение
+                //Изменяем в meta информации ссылку на последний блок
+                // если пишем первый блок, то этого делать не надо, т.к. в буфер перезатрет эти изменения
                 fileChannel.write(longToByteArray(saveWritingPosition), firstBlockPosition + 8 * 3);
             }
 
             if(!isWriteFirstBlock) {
-                //зменяем ссылку на следующик блок, в предыдущем блоке
+                //изменяем ссылку на следующий блок, в предыдущем блоке
                 // Если блок, который пишем первый, то предыдущего блока нет
 
                 fileChannel.write(longToByteArray(saveWritingPosition), currentBlockPosition + 8);
             }
 
-            // Записываем начало блока. первые 8 байт - long "ссылка" на конец данных в этом блоке
+            // Записываем начало блока. Первые 8 байт - long "ссылка" на конец данных в этом блоке
             fileChannel.write(longToByteArray(saveWritingPosition + 8 * 2 + bufferPosition - 1), writePosition);
             writePosition += 8;
 
@@ -407,7 +394,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
             fileChannel.write(longToByteArray(-1), writePosition);
             writePosition += 8;
 
-            // Пишем буффер в память
+            // Пишем буфер в память
             fileChannel.write(ByteBuffer.wrap(buffer), writePosition);
 
             if(isWriteFirstBlock) {
@@ -438,6 +425,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
             readBlock();
         }
         isWriteData = true;
+        assert buffer != null;
         buffer[bufferPosition++] = b;
         position++;
 
@@ -452,14 +440,14 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
     }
 
     @Override
-    public void write(@NotNull byte[] b, int off, int len) throws IOException {
+    public void write(byte[] b, int off, int len) throws IOException {
         for(int idx = off; idx < len; idx++) {
             write(b[idx]);
         }
     }
 
     @Override
-    public void write(@NotNull byte[] b) throws IOException {
+    public void write(byte[] b) throws IOException {
         write(b, 0, b.length);
     }
 
@@ -494,6 +482,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
             }
         }
 
+        assert lock != null;
         lock.release();
         sourceFile.seek(position + 8);
         long nextPosition = sourceFile.readLong();
@@ -522,6 +511,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
         } else {
             seek(newLength);
             deleteBlock(currentBlockPosition, bufferPosition);
+            size = newLength;
         }
     }
 
@@ -531,8 +521,11 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
             writeBlock();
         }
 
-        if(pos > length()) {
-            throw new EOFException();
+        if(pos < 0) throw new IOException();
+
+        if(pos > size) {
+            seek(size);
+            return;
         }
 
         readFirstBlock();

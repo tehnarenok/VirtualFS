@@ -156,4 +156,24 @@ public class VirtualFS {
     public Iterator<VirtualFile> find(@NotNull Pattern pattern) {
         return this.rootDirectory.find(pattern, true);
     }
+
+    public void importContent(@NotNull File folder) throws NullVirtualFS, LockedVirtualFSNode,
+            OverlappingVirtualFileLockException, IOException {
+        rootDirectory.importContent(folder);
+    }
+
+    public void importContent(@NotNull VirtualFS virtualFS) throws NullVirtualFS, LockedVirtualFSNode,
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+        rootDirectory.importContent(virtualFS.getRootDirectory());
+    }
+
+    public void importContent(@NotNull VirtualDirectory virtualDirectory) throws NullVirtualFS, LockedVirtualFSNode,
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+        rootDirectory.importContent(virtualDirectory);
+    }
+
+    public void exportContent(@NotNull File folder) throws NullVirtualFS, LockedVirtualFSNode,
+            OverlappingVirtualFileLockException, IOException {
+        rootDirectory.exportContent(folder);
+    }
 }

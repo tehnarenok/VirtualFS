@@ -9,18 +9,18 @@ import java.util.function.Predicate;
 
 class VirtualFileIterator implements Iterator<VirtualFile> {
     private final Predicate<VirtualFile> match;
-    private final Boolean isRecursive;
+    private final boolean isRecursive;
     private Integer fileIdx;
     private Integer directoryIdx;
     private Iterator<VirtualFile> directoryIterator;
 
-    private VirtualDirectory directory;
-    private List<VirtualFile> files;
-    private List<VirtualDirectory> directories;
+    private final VirtualDirectory directory;
+    private final List<VirtualFile> files;
+    private final List<VirtualDirectory> directories;
 
     public VirtualFileIterator(
             @NotNull Predicate<VirtualFile> match,
-            @NotNull Boolean isRecursive,
+            boolean isRecursive,
             @NotNull VirtualDirectory directory
     ) throws ConcurrentModificationException {
         this.match = match;
