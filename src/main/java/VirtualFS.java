@@ -9,11 +9,7 @@ import java.util.regex.Pattern;
 public class VirtualFS {
     private VirtualDirectory rootDirectory;
     File sourceFile;
-    private VirtualRandomAccessFile virtualRandomAccessFile;
-
-    public VirtualFS() {
-        this.rootDirectory = new VirtualDirectory("");
-    }
+    private final VirtualRandomAccessFile virtualRandomAccessFile;
 
     public VirtualFS(@NotNull File sourceFile) throws IOException, ClassNotFoundException {
         this(sourceFile, 8);
@@ -21,10 +17,9 @@ public class VirtualFS {
 
     public VirtualFS(
             @NotNull File sourceFile,
-            @NotNull long position)
+            long position)
             throws IOException, ClassNotFoundException {
         this.sourceFile = sourceFile;
-        long len = sourceFile.length();
         if(sourceFile.length() < 8) {
             this.rootDirectory = new VirtualDirectory("", null, this);
             this.virtualRandomAccessFile = new VirtualRandomAccessFile(sourceFile, "rw");
@@ -38,7 +33,7 @@ public class VirtualFS {
     public void save() throws IOException {
         // Серриализуем рутовую папку, и пишем в файл
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream out = null;
+        ObjectOutputStream out;
 
         out = new ObjectOutputStream(bos);
         out.writeObject(this.rootDirectory);
