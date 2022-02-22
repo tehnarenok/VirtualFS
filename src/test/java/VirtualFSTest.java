@@ -33,7 +33,7 @@ class VirtualFSTest {
     @Test
     public void creatingVirtualFS() throws LockedVirtualFSNode {
         assertNull(virtualFS.getRootDirectory().getRootDirectory());
-        assertEquals("", virtualFS.getRootDirectory().getName());
+        assertEquals("root", virtualFS.getRootDirectory().getName());
         assertArrayEquals(
                 new VirtualDirectory[]{},
                 virtualFS.getDirectories().toArray()
