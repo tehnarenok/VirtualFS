@@ -22,7 +22,7 @@ public abstract class VirtualFSNode implements Serializable {
         return this.name;
     }
 
-    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName {
         this.name = name;
     }
 
@@ -42,7 +42,7 @@ public abstract class VirtualFSNode implements Serializable {
     }
 
     public void move(@NotNull VirtualDirectory destinationDirectory)
-            throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {}
+            throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName, UnremovableVirtualNode {}
 
     protected File getSourceFile() throws NullVirtualFS {
         return getVirtualFS().sourceFile;

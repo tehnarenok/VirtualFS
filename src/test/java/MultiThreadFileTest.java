@@ -24,8 +24,7 @@ public class MultiThreadFileTest {
     }
 
     @Test
-    void testReadAndDelete() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    void testReadAndDelete() throws IOException, VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("r");
@@ -38,8 +37,7 @@ public class MultiThreadFileTest {
     }
 
     @Test
-    void testReadAndMove() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    void testReadAndMove() throws IOException, VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
@@ -53,8 +51,7 @@ public class MultiThreadFileTest {
     }
 
     @Test
-    void testReadAndCopy() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    void testReadAndCopy() throws IOException, VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
@@ -66,8 +63,7 @@ public class MultiThreadFileTest {
     }
 
     @Test
-    void testReadAndRename() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    void testReadAndRename() throws IOException, VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("r");
@@ -80,8 +76,7 @@ public class MultiThreadFileTest {
     }
 
     @Test
-    void testWriteAndDelete() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    void testWriteAndDelete() throws IOException, VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("rw");
@@ -94,9 +89,9 @@ public class MultiThreadFileTest {
     }
 
     @Test
-    void testWriteAndMove() throws IOException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
+    void testWriteAndMove() throws IOException, VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
-        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name + name);
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("rw");
 
@@ -108,8 +103,7 @@ public class MultiThreadFileTest {
     }
 
     @Test
-    void testWriteAndCopy() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    void testWriteAndCopy() throws IOException, VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
@@ -123,8 +117,7 @@ public class MultiThreadFileTest {
     }
 
     @Test
-    void testWriteAndRename() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    void testWriteAndRename() throws IOException, VFSException {
 
         VirtualFile virtualFile = virtualFS.touch(name);
 

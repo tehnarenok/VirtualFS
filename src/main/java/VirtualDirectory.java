@@ -52,17 +52,26 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
     }
 
     @Override
-    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
-        Lock lock = tryLockNameWrite();
-        isModifying.set(true);
+    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName {
+        List<Lock> locks = new ArrayList<>();
         try {
-            super.rename(name);
+            locks.add(tryLockNameWrite());
+            if(rootDirectory != null) locks.add(rootDirectory.tryWriteLockDirectories());
+        } catch (LockedVirtualFSNode e) {
+            locks.forEach(Lock::unlock);
+            throw e;
         }
-        finally {
-            lock.unlock();
-            save();
+        isModifying.set(true);
+        if(rootDirectory != null && !rootDirectory.checkForUniqueDirectoryName(this, name)) {
             isModifying.set(false);
+            locks.forEach(Lock::unlock);
+            throw new NotUniqueName();
         }
+
+        super.rename(name);
+        locks.forEach(Lock::unlock);
+        save();
+        isModifying.set(false);
     }
 
     public List<VirtualDirectory> getDirectories() throws LockedVirtualFSNode {
@@ -80,9 +89,14 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         return files;
     }
 
-    public VirtualDirectory mkdir(@NotNull String name) throws LockedVirtualFSNode {
+    public VirtualDirectory mkdir(@NotNull String name) throws LockedVirtualFSNode, NotUniqueName {
         Lock lock = tryWriteLockDirectories();
         isModifying.set(true);
+        if(!checkForUniqueDirectoryName(this, name)) {
+            isModifying.set(false);
+            lock.unlock();
+            throw new NotUniqueName();
+        }
         VirtualDirectory newDirectory;
         try {
             newDirectory = new VirtualDirectory(name, this);
@@ -95,9 +109,15 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         return newDirectory;
     }
 
-    public VirtualFile touch(@NotNull String name) throws LockedVirtualFSNode {
+    public VirtualFile touch(@NotNull String name) throws LockedVirtualFSNode, NotUniqueName {
         Lock lock = tryWriteLockFiles();
         isModifying.set(true);
+        if(!checkForUniqueFileName(name)) {
+            isModifying.set(false);
+            lock.unlock();
+            throw new NotUniqueName();
+        }
+
         VirtualFile newFile;
         try {
             newFile = new VirtualFile(name, this);
@@ -162,7 +182,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         directory.rootDirectory = null;
     }
 
-    void paste(@NotNull VirtualDirectory virtualDirectory) {
+    void paste(@NotNull VirtualDirectory virtualDirectory){
         directories.add(virtualDirectory);
         virtualDirectory.rootDirectory = this;
     }
@@ -173,19 +193,23 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
     }
 
     @Override
-    public void move(@NotNull VirtualDirectory destinationDirectory) throws LockedVirtualFSNode {
+    public void move(@NotNull VirtualDirectory destinationDirectory)
+            throws LockedVirtualFSNode, NotUniqueName, UnremovableVirtualNode {
+        if(rootDirectory == null) {
+            throw new UnremovableVirtualNode();
+        }
         List<Lock> locks = tryWriteLockDown();
         try {
             locks.add(rootDirectory.tryWriteLockDirectories());
-        } catch (LockedVirtualFSNode e) {
-            locks.forEach(Lock::unlock);
-            throw e;
-        }
-        try {
             locks.add(destinationDirectory.tryWriteLockDirectories());
         } catch (LockedVirtualFSNode e) {
             locks.forEach(Lock::unlock);
             throw e;
+        }
+        rootDirectory.isModifying.set(true);
+        if(!destinationDirectory.checkForUniqueDirectoryName(this)) {
+            locks.forEach(Lock::unlock);
+            throw new NotUniqueName();
         }
         rootDirectory.remove(this);
         destinationDirectory.paste(this);
@@ -195,7 +219,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
     VirtualDirectory clone(@NotNull VirtualDirectory destinationDirectory)
             throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException,
-            IOException, VirtualFSNodeIsDeleted {
+            IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         VirtualDirectory clonedDirectory = new VirtualDirectory(
                 name,
                 destinationDirectory
@@ -214,7 +238,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
     public VirtualDirectory copy(@NotNull VirtualDirectory destinationDirectory)
             throws LockedVirtualFSNode, NullVirtualFS,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         List<Lock> locks = tryReadLockDown();
         destinationDirectory.isModifying.set(true);
         try {
@@ -433,15 +457,21 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
     public void importContent(@NotNull VirtualDirectory directory)
             throws LockedVirtualFSNode, NullVirtualFS,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         List<Lock> locks = directory.tryReadLockDown();
         locks = tryLockWriteFilesDirectories(locks);
 
         for (VirtualDirectory virtualDirectory : directory.directories) {
+            if(!checkForUniqueDirectoryName(virtualDirectory.getName())) {
+                throw new NotUniqueName();
+            }
             paste(virtualDirectory.clone(this));
         }
 
         for (VirtualFile virtualFile : directory.files) {
+            if(!checkForUniqueFileName(virtualFile.getName())) {
+                throw new NotUniqueName();
+            }
             paste(virtualFile.clone(this));
         }
 
@@ -451,7 +481,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
     public void importContent(@NotNull File folder)
             throws LockedVirtualFSNode, NullVirtualFS,
-            OverlappingVirtualFileLockException, IOException {
+            OverlappingVirtualFileLockException, IOException, NotUniqueName {
         if (!folder.isDirectory()) {
             throw new InvalidObjectException(String.format("File is not a directory: %s", folder.getAbsolutePath()));
         }
@@ -460,10 +490,16 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
         for (final File fileEntry : Objects.requireNonNull(folder.listFiles())) {
             if (fileEntry.isDirectory()) {
+                if(!checkForUniqueDirectoryName(fileEntry.getName())) {
+                    throw new NotUniqueName();
+                }
                 VirtualDirectory directory = new VirtualDirectory(fileEntry.getName());
                 paste(directory);
                 directory.importContent(fileEntry);
             } else {
+                if(!checkForUniqueFileName(fileEntry.getName())) {
+                    throw new NotUniqueName();
+                }
                 VirtualFile file = new VirtualFile(fileEntry.getName());
                 paste(file);
                 VirtualRandomAccessFile virtualRandomAccessFile = file.open("rw");
@@ -528,5 +564,51 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         } catch (Throwable throwable) {
             return;
         }
+    }
+
+    boolean checkForUniqueDirectoryName(
+            @NotNull String name) {
+        for(VirtualDirectory directory : directories) {
+            if(Objects.equals(directory.getName(), name)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    boolean checkForUniqueDirectoryName(
+            @NotNull VirtualDirectory virtualDirectory,
+            @NotNull String name) {
+        for(VirtualDirectory directory : directories) {
+            if(directory != virtualDirectory && Objects.equals(directory.getName(), name)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    boolean checkForUniqueDirectoryName(@NotNull VirtualDirectory virtualDirectory) {
+        return checkForUniqueDirectoryName(virtualDirectory, virtualDirectory.getName());
+    }
+
+    boolean checkForUniqueFileName(
+            @NotNull String name) {
+        for(VirtualFile file : files) {
+            if(Objects.equals(file.getName(), name)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    boolean checkForUniqueFileName(
+            @NotNull VirtualFile virtualFile,
+            @NotNull String name) {
+        for(VirtualFile file : files) {
+            if(file != virtualFile && Objects.equals(file.getName(), name)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -374,7 +374,7 @@ public class VirtualRandomAccessFile extends RandomAccessFile {
             long saveWritingPosition = writePosition;
 
             if(!isWriteFirstBlock) {
-                //Изменяем в meta информации ссылку на последний блок
+                //изменяем в meta информации ссылку на последний блок
                 // если пишем первый блок, то этого делать не надо, т.к. в буфер перезатрет эти изменения
                 fileChannel.write(longToByteArray(saveWritingPosition), firstBlockPosition + 8 * 3);
             }

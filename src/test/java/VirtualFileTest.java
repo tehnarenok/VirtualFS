@@ -32,19 +32,15 @@ class VirtualFileTest {
         VirtualFile virtualFile = new VirtualFile(name);
         Date createdAt = new Date();
 
-        assertEquals(
-                createdAt,
-                virtualFile.getCreatedAt()
-        );
+        assertEquals(name, virtualFile.getName());
 
-        assertEquals(
-                createdAt,
-                virtualFile.getModifiedAt()
-        );
+        assertEquals(createdAt, virtualFile.getCreatedAt());
+
+        assertEquals(createdAt, virtualFile.getModifiedAt());
     }
 
     @Test
-    void renameFile() throws InterruptedException, LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+    void renameFile() throws InterruptedException, VFSException {
         VirtualFile virtualFile;
         virtualFile = new VirtualFile(name);
 
@@ -65,7 +61,28 @@ class VirtualFileTest {
     }
 
     @Test
-    void modifyContent() throws InterruptedException, IOException, LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
+    void uniqueName() throws VFSException {
+        virtualFS.touch(name);
+
+        assertThrows(NotUniqueName.class, () -> virtualFS.touch(name));
+        assertDoesNotThrow(() -> virtualFS.touch(name + name));
+    }
+
+    @Test
+    void uniqueNameRename() throws VFSException {
+        String name_1 = "name_1";
+        String name_2 = "name_2";
+        String name_3 = "name_3";
+        VirtualFile virtualFile = virtualFS.touch(name_1);
+        virtualFS.touch(name_2);
+
+        assertThrows(NotUniqueName.class, () -> virtualFile.rename(name_2));
+        assertDoesNotThrow(() -> virtualFile.rename(name_1));
+        assertDoesNotThrow(() -> virtualFile.rename(name_3));
+    }
+
+    @Test
+    void modifyContent() throws InterruptedException, IOException, VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
         Date modifiedAt = virtualFile.getModifiedAt();
 
@@ -94,7 +111,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void removeSelf() throws LockedVirtualFSNode {
+    void removeSelf() throws VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
 
         assertDoesNotThrow(() -> virtualFile.remove());
@@ -108,7 +125,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void remove() throws LockedVirtualFSNode {
+    void remove() throws VFSException {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualFile virtualFile = rootDirectory.touch(name);
 
@@ -123,7 +140,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void removeDeleted() throws LockedVirtualFSNode {
+    void removeDeleted() throws VFSException {
         VirtualFile virtualFile = virtualFS.touch(name);
 
         assertDoesNotThrow(() -> virtualFile.remove());
@@ -132,7 +149,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void move() throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+    void move() throws VFSException {
         VirtualDirectory rootDirectory = virtualFS.getRootDirectory();
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
@@ -154,8 +171,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void copy() throws NullVirtualFS, LockedVirtualFSNode,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+    void copy() throws VFSException, IOException {
         VirtualDirectory rootDirectory = virtualFS.getRootDirectory();
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
@@ -191,8 +207,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void copyWithContent() throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException,
-            IOException, VirtualFSNodeIsDeleted {
+    void copyWithContent() throws VFSException, IOException {
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
         byte[] content;
@@ -232,10 +247,10 @@ class VirtualFileTest {
     }
 
     @Test
-    void copyDirectoryWithContent() throws NullVirtualFS, LockedVirtualFSNode,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+    void copyDirectoryWithContent() throws VFSException, IOException {
+        String destinationDirectoryName = "destinationDirectoryName";
         VirtualDirectory directory = virtualFS.mkdir(name);
-        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(destinationDirectoryName);
 
         byte[] content;
         content = "Hello world".getBytes();
@@ -280,8 +295,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void testReadWrite() throws IOException, ClassNotFoundException,
-            OverlappingVirtualFileLockException, NullVirtualFS, LockedVirtualFSNode {
+    void testReadWrite() throws IOException, VFSException, ClassNotFoundException {
         folder.create();
         File sourceFile = folder.newFile(name);
         VirtualFS virtualFS = new VirtualFS(sourceFile);
@@ -302,7 +316,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void testReadWriteLong() throws IOException, OverlappingVirtualFileLockException, NullVirtualFS, LockedVirtualFSNode {
+    void testReadWriteLong() throws IOException, VFSException {
         long content = 10;
 
         VirtualFile file = virtualFS.touch(name);
@@ -318,7 +332,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void testReadWrite_2() throws IOException, ClassNotFoundException, OverlappingVirtualFileLockException, NullVirtualFS, LockedVirtualFSNode {
+    void testReadWrite_2() throws IOException, VFSException, ClassNotFoundException {
         String content = "hello world";
 
         VirtualFile file = virtualFS.touch(name);
@@ -361,7 +375,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void testReadWriteParrarel() throws IOException, ClassNotFoundException, OverlappingVirtualFileLockException, NullVirtualFS, InterruptedException, LockedVirtualFSNode {
+    void testReadWriteParrarel() throws IOException, ClassNotFoundException, VFSException, InterruptedException {
         String name_1 = "name_1";
         String name_2 = "name_2";
 
@@ -404,7 +418,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void testReadLock() throws LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException, IOException {
+    void testReadLock() throws VFSException, IOException {
         VirtualFile virtualFile = virtualFS.touch(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 
@@ -419,7 +433,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void testWriteLock() throws LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException, IOException {
+    void testWriteLock() throws VFSException, IOException {
         VirtualFile virtualFile = virtualFS.touch(name);
         VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
 

@@ -25,8 +25,7 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void writeFile_deleteDirectory() throws IOException,
-            LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
+    public void writeFile_deleteDirectory() throws IOException, VFSException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
 
@@ -40,10 +39,10 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void writeFile_copyDirectory() throws IOException,
-            LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
+    public void writeFile_copyDirectory() throws IOException, VFSException {
+        String destinationDirectoryName = "destinationDirectoryName";
         VirtualDirectory directory = virtualFS.mkdir(name);
-        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(destinationDirectoryName);
         VirtualFile file = directory.touch(name);
 
         VirtualRandomAccessFile randomAccessFile = file.open("rw");
@@ -56,10 +55,10 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void writeFile_moveDirectory() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    public void writeFile_moveDirectory() throws IOException, VFSException {
+        String destinationDirectoryName = "destinationDirectoryName";
         VirtualDirectory directory = virtualFS.mkdir(name);
-        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(destinationDirectoryName);
         VirtualFile file = directory.touch(name);
 
         VirtualRandomAccessFile randomAccessFile = file.open("rw");
@@ -72,20 +71,18 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void openFile_touchNearby() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    public void openFile_touchNearby() throws IOException, VFSException {
         VirtualDirectory directory = virtualFS.mkdir(name);
-        virtualFS.mkdir(name);
+        virtualFS.mkdir(name + name);
         VirtualFile file = directory.touch(name);
 
         file.open("rw");
 
-        assertDoesNotThrow(() -> directory.touch(name));
+        assertDoesNotThrow(() -> directory.touch(name + name));
     }
 
     @Test
-    public void openFile_mkdirNearby() throws IOException,
-            LockedVirtualFSNode, NullVirtualFS, OverlappingVirtualFileLockException {
+    public void openFile_mkdirNearby() throws IOException, VFSException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
 
@@ -95,8 +92,7 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void readFile_deleteDirectory() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    public void readFile_deleteDirectory() throws IOException, VFSException {
         VirtualDirectory directory = virtualFS.mkdir(name);
         VirtualFile file = directory.touch(name);
 
@@ -110,10 +106,9 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void readFile_copyDirectory() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    public void readFile_copyDirectory() throws IOException, VFSException {
         VirtualDirectory directory = virtualFS.mkdir(name);
-        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(name + name);
         VirtualFile file = directory.touch(name);
 
         file.open("r");
@@ -122,10 +117,10 @@ public class MultiThreadVirtualDirectoryTest {
     }
 
     @Test
-    public void readFile_moveDirectory() throws IOException, LockedVirtualFSNode,
-            NullVirtualFS, OverlappingVirtualFileLockException {
+    public void readFile_moveDirectory() throws IOException, VFSException {
+        String destinationDirectoryName = "destinationDirectoryName";
         VirtualDirectory directory = virtualFS.mkdir(name);
-        VirtualDirectory destinationDirectory = virtualFS.mkdir(name);
+        VirtualDirectory destinationDirectory = virtualFS.mkdir(destinationDirectoryName);
         VirtualFile file = directory.touch(name);
 
         VirtualRandomAccessFile randomAccessFile = file.open("r");

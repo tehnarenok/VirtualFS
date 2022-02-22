@@ -48,13 +48,30 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
     }
 
     @Override
-    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName {
         if(isDeleted) throw new VirtualFSNodeIsDeleted();
-        Lock lock = tryWriteLock();
-        if(rootDirectory != null) rootDirectory.isModifying.set(true);
+        List<Lock> locks = new ArrayList<>();
+        try {
+            locks.add(tryWriteLock());
+            if (rootDirectory != null) {
+                rootDirectory.isModifying.set(true);
+                locks.add(rootDirectory.tryWriteLockFiles());
+            }
+        } catch (LockedVirtualFSNode e) {
+            if (rootDirectory != null) {
+                rootDirectory.isModifying.set(false);
+            }
+            locks.forEach(Lock::unlock);
+            throw e;
+        }
+        if(rootDirectory != null && !rootDirectory.checkForUniqueFileName(this, name)) {
+            rootDirectory.isModifying.set(false);
+            locks.forEach(Lock::unlock);
+            throw new NotUniqueName();
+        }
         super.rename(name);
         modifiedAt = new Date();
-        lock.unlock();
+        locks.forEach(Lock::unlock);
         if(rootDirectory != null) rootDirectory.isModifying.set(false);
         if(rootDirectory != null) rootDirectory.save();
     }
@@ -95,7 +112,7 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
 
     @Override
     public void move(@NotNull VirtualDirectory destinationDirectory)
-            throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+            throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName {
         if(isDeleted) throw new VirtualFSNodeIsDeleted();
         Lock lock = tryWriteLock();
         Lock directoryLock;
@@ -105,12 +122,23 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
             lock.unlock();
             throw e;
         }
-        if(rootDirectory != null) rootDirectory.isModifying.set(true);
+        destinationDirectory.isModifying.set(true);
+        if(rootDirectory != null) {
+            rootDirectory.isModifying.set(true);
+            if(!destinationDirectory.checkForUniqueFileName(name)) {
+                rootDirectory.isModifying.set(false);
+                destinationDirectory.isModifying.set(false);
+                lock.unlock();
+                directoryLock.unlock();
+                throw new NotUniqueName();
+            }
+        }
         if(rootDirectory != null) rootDirectory.remove(this);
         destinationDirectory.paste(this);
         lock.unlock();
         directoryLock.unlock();
-        if(rootDirectory != null)rootDirectory.isModifying.set(false);
+        if(rootDirectory != null) rootDirectory.isModifying.set(false);
+        destinationDirectory.isModifying.set(false);
         if(rootDirectory != null) rootDirectory.save();
     }
 
@@ -139,7 +167,7 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
 
     public VirtualFile copy(@NotNull VirtualDirectory destinationDirectory)
             throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException,
-            IOException, VirtualFSNodeIsDeleted {
+            IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         Lock lock = tryReadLock();
         Lock directoryLock;
         try {

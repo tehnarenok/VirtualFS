@@ -60,11 +60,21 @@ public class VirtualFS {
         rootDirectory.virtualFS = this;
     }
 
-    public VirtualDirectory mkdir(@NotNull String name) throws LockedVirtualFSNode {
+    public void close() throws IOException {
+        virtualRandomAccessFile.close();
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
+
+    public VirtualDirectory mkdir(@NotNull String name) throws LockedVirtualFSNode, NotUniqueName {
         return this.rootDirectory.mkdir(name);
     }
 
-    public VirtualFile touch(@NotNull String name) throws LockedVirtualFSNode {
+    public VirtualFile touch(@NotNull String name) throws LockedVirtualFSNode, NotUniqueName {
         return this.rootDirectory.touch(name);
     }
 
@@ -96,22 +106,22 @@ public class VirtualFS {
     }
 
     public void move(@NotNull VirtualFile virtualFile, @NotNull VirtualDirectory destinationDirectory)
-            throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+            throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName {
         virtualFile.move(destinationDirectory);
     }
 
     public void move(
             @NotNull VirtualDirectory virtualDirectory,
             @NotNull VirtualDirectory destinationDirectory
-    ) throws LockedVirtualFSNode {
+    ) throws LockedVirtualFSNode, NotUniqueName, UnremovableVirtualNode {
         virtualDirectory.move(destinationDirectory);
     }
 
-    public void move(@NotNull VirtualFile virtualFile) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted {
+    public void move(@NotNull VirtualFile virtualFile) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName {
         virtualFile.move(this.rootDirectory);
     }
 
-    public void move(@NotNull VirtualDirectory virtualDirectory) throws LockedVirtualFSNode {
+    public void move(@NotNull VirtualDirectory virtualDirectory) throws LockedVirtualFSNode, NotUniqueName, UnremovableVirtualNode {
         virtualDirectory.move(this.rootDirectory);
     }
 
@@ -119,13 +129,13 @@ public class VirtualFS {
             @NotNull VirtualFile virtualFile,
             @NotNull VirtualDirectory destinationDirectory)
             throws NullVirtualFS, LockedVirtualFSNode,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         return virtualFile.copy(destinationDirectory);
     }
 
     public VirtualFile copy(@NotNull VirtualFile virtualFile)
             throws NullVirtualFS, LockedVirtualFSNode,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         return virtualFile.copy(this.rootDirectory);
     }
 
@@ -133,14 +143,14 @@ public class VirtualFS {
             @NotNull VirtualDirectory virtualDirectory,
             @NotNull VirtualDirectory destinationDirectory)
             throws LockedVirtualFSNode, NullVirtualFS,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         return virtualDirectory.copy(destinationDirectory);
     }
 
     public VirtualDirectory copy(
             @NotNull VirtualDirectory virtualDirectory)
             throws LockedVirtualFSNode, NullVirtualFS,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         return virtualDirectory.copy(this.rootDirectory);
     }
 
@@ -153,17 +163,17 @@ public class VirtualFS {
     }
 
     public void importContent(@NotNull File folder) throws NullVirtualFS, LockedVirtualFSNode,
-            OverlappingVirtualFileLockException, IOException {
+            OverlappingVirtualFileLockException, IOException, NotUniqueName {
         rootDirectory.importContent(folder);
     }
 
     public void importContent(@NotNull VirtualFS virtualFS) throws NullVirtualFS, LockedVirtualFSNode,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         rootDirectory.importContent(virtualFS.getRootDirectory());
     }
 
     public void importContent(@NotNull VirtualDirectory virtualDirectory) throws NullVirtualFS, LockedVirtualFSNode,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
         rootDirectory.importContent(virtualDirectory);
     }
 
