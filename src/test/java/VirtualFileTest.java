@@ -21,14 +21,14 @@ class VirtualFileTest {
     private File sourceFile;
 
     @BeforeEach
-    public void setup() throws IOException, ClassNotFoundException {
+    public void setup() throws IOException, ClassNotFoundException, VFSException {
         folder.create();
         sourceFile = folder.newFile(name);
         virtualFS = new VirtualFS(sourceFile);
     }
 
     @Test
-    void createFile() {
+    void createFile() throws VFSException {
         VirtualFile virtualFile = new VirtualFile(name);
         Date createdAt = new Date();
 
@@ -37,6 +37,11 @@ class VirtualFileTest {
         assertEquals(createdAt, virtualFile.getCreatedAt());
 
         assertEquals(createdAt, virtualFile.getModifiedAt());
+    }
+
+    @Test
+    void createFileWithEmptyName() throws VFSException {
+        assertThrows(EmptyNodeName.class, () -> new VirtualFile(""));
     }
 
     @Test
@@ -58,6 +63,12 @@ class VirtualFileTest {
                 modifiedAt,
                 virtualFile.getModifiedAt()
         );
+    }
+
+    @Test
+    void renameEmptyName() throws VFSException {
+        VirtualFile virtualFile = new VirtualFile(name);
+        assertThrows(EmptyNodeName.class, () -> virtualFile.rename(""));
     }
 
     @Test
@@ -99,7 +110,7 @@ class VirtualFileTest {
     }
 
     @Test
-    void removeWithNullRootDirectory() {
+    void removeWithNullRootDirectory() throws VFSException {
         VirtualFile virtualFile = new VirtualFile(name);
 
         UnremovableVirtualNode exception = assertThrows(UnremovableVirtualNode.class, virtualFile::remove);

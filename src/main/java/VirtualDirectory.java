@@ -18,20 +18,20 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
     transient private ReentrantReadWriteLock filesReadWriteLock = new ReentrantReadWriteLock();
     transient private ReentrantReadWriteLock nameLock = new ReentrantReadWriteLock();
 
-    public VirtualDirectory(String name) {
+    public VirtualDirectory(String name) throws EmptyNodeName {
         this(name, null);
     }
 
     protected VirtualDirectory(
             @NotNull String name,
-            VirtualDirectory rootDirectory) {
+            VirtualDirectory rootDirectory) throws EmptyNodeName {
         this(name, rootDirectory, null);
     }
 
     protected VirtualDirectory(
             @NotNull String name,
             VirtualDirectory rootDirectory,
-            VirtualFS virtualFS) {
+            VirtualFS virtualFS) throws EmptyNodeName {
         super(name, rootDirectory);
         this.directories = new ArrayList<>();
         this.files = new ArrayList<>();
@@ -52,7 +52,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
     }
 
     @Override
-    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName {
+    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName, EmptyNodeName {
         List<Lock> locks = new ArrayList<>();
         try {
             locks.add(tryLockNameWrite());
@@ -67,11 +67,13 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
             locks.forEach(Lock::unlock);
             throw new NotUniqueName();
         }
-
-        super.rename(name);
-        locks.forEach(Lock::unlock);
-        save();
-        isModifying.set(false);
+        try {
+            super.rename(name);
+        } finally {
+            locks.forEach(Lock::unlock);
+            save();
+            isModifying.set(false);
+        }
     }
 
     public List<VirtualDirectory> getDirectories() throws LockedVirtualFSNode {
@@ -89,7 +91,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         return files;
     }
 
-    public VirtualDirectory mkdir(@NotNull String name) throws LockedVirtualFSNode, NotUniqueName {
+    public VirtualDirectory mkdir(@NotNull String name) throws LockedVirtualFSNode, NotUniqueName, EmptyNodeName {
         Lock lock = tryWriteLockDirectories();
         isModifying.set(true);
         if(!checkForUniqueDirectoryName(this, name)) {
@@ -101,6 +103,8 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         try {
             newDirectory = new VirtualDirectory(name, this);
             directories.add(newDirectory);
+        } catch (EmptyNodeName e) {
+            throw e;
         } finally {
             isModifying.set(false);
             lock.unlock();
@@ -109,7 +113,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         return newDirectory;
     }
 
-    public VirtualFile touch(@NotNull String name) throws LockedVirtualFSNode, NotUniqueName {
+    public VirtualFile touch(@NotNull String name) throws LockedVirtualFSNode, NotUniqueName, EmptyNodeName {
         Lock lock = tryWriteLockFiles();
         isModifying.set(true);
         if(!checkForUniqueFileName(name)) {
@@ -221,7 +225,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
     VirtualDirectory clone(@NotNull VirtualDirectory destinationDirectory)
             throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException,
-            IOException, VirtualFSNodeIsDeleted, NotUniqueName {
+            IOException, VirtualFSNodeIsDeleted, EmptyNodeName {
         VirtualDirectory clonedDirectory = new VirtualDirectory(
                 name,
                 destinationDirectory
@@ -240,7 +244,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
     public VirtualDirectory copy(@NotNull VirtualDirectory destinationDirectory)
             throws LockedVirtualFSNode, NullVirtualFS,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, EmptyNodeName {
         List<Lock> locks = tryReadLockDown();
         destinationDirectory.isModifying.set(true);
         try {
@@ -459,7 +463,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
     public void importContent(@NotNull VirtualDirectory directory)
             throws LockedVirtualFSNode, NullVirtualFS,
-            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName {
+            OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName, EmptyNodeName {
         List<Lock> locks = directory.tryReadLockDown();
         locks = tryLockWriteFilesDirectories(locks);
 
@@ -485,7 +489,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
     public void importContent(@NotNull File folder)
             throws LockedVirtualFSNode, NullVirtualFS,
-            OverlappingVirtualFileLockException, IOException, NotUniqueName {
+            OverlappingVirtualFileLockException, IOException, NotUniqueName, EmptyNodeName {
         if (!folder.isDirectory()) {
             throw new InvalidObjectException(String.format("File is not a directory: %s", folder.getAbsolutePath()));
         }

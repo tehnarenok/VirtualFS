@@ -23,14 +23,14 @@ class VirtualDirectoryTest {
     private VirtualFS virtualFS;
 
     @BeforeEach
-    public void setup() throws IOException, ClassNotFoundException {
+    public void setup() throws VFSException, IOException, ClassNotFoundException {
         folder.create();
         File sourceFile = folder.newFile(name);
         virtualFS = new VirtualFS(sourceFile);
     }
 
     @Test
-     void createDirectory() throws LockedVirtualFSNode {
+     void createDirectory() throws VFSException {
         VirtualDirectory directory = new VirtualDirectory(name);
 
         assertNull(directory.getRootDirectory());
@@ -49,13 +49,25 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void rename() throws LockedVirtualFSNode, NotUniqueName, VirtualFSNodeIsDeleted {
+    void createDirectoryWithEmptyName() throws VFSException {
+        assertThrows(EmptyNodeName.class, () -> new VirtualDirectory(""));
+    }
+
+    @Test
+    void rename() throws VFSException {
         String newName = name + name;
         VirtualDirectory virtualDirectory = virtualFS.mkdir(name);
         virtualDirectory.rename(newName);
 
         assertEquals(newName, virtualDirectory.getName());
     }
+
+    @Test
+    void renameToEmpty() throws VFSException {
+        VirtualDirectory virtualDirectory = virtualFS.mkdir(name);
+        assertThrows(EmptyNodeName.class, () -> virtualDirectory.rename(""));
+    }
+
 
     @Test
     void uniqueName() throws VFSException {
@@ -79,7 +91,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void createDirectoryWithRoot() {
+    void createDirectoryWithRoot() throws VFSException {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
         VirtualDirectory directory = new VirtualDirectory(name, rootDirectory);
 
@@ -151,7 +163,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void removeWithNullRootDirectory() {
+    void removeWithNullRootDirectory() throws VFSException {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
         UnremovableVirtualNode exception = assertThrows(UnremovableVirtualNode.class, rootDirectory::remove);
@@ -295,7 +307,7 @@ class VirtualDirectoryTest {
     }
 
     @Test
-    void findSubNameInEmpty() {
+    void findSubNameInEmpty() throws VFSException {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
         Iterator<VirtualFile> emptyIterator = rootDirectory.find("123");

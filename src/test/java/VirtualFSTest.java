@@ -24,7 +24,7 @@ class VirtualFSTest {
     private File sourceFile;
 
     @BeforeEach
-    public void setup() throws IOException, ClassNotFoundException {
+    public void setup() throws IOException, ClassNotFoundException, VFSException {
         folder.create();
         sourceFile = folder.newFile(name);
         virtualFS = new VirtualFS(sourceFile);
@@ -45,7 +45,7 @@ class VirtualFSTest {
     }
 
     @Test
-    void mkdir() throws LockedVirtualFSNode, NotUniqueName {
+    void mkdir() throws VFSException {
         VirtualDirectory newDirectory = virtualFS.mkdir(name);
 
         assertArrayEquals(

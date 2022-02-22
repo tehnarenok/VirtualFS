@@ -13,7 +13,10 @@ public abstract class VirtualFSNode implements Serializable {
 
     protected VirtualFSNode(
             @NotNull String name,
-            VirtualDirectory rootDirectory) {
+            VirtualDirectory rootDirectory) throws EmptyNodeName {
+        if(name.equals("")) {
+            throw new EmptyNodeName();
+        }
         this.name = name;
         this.rootDirectory = rootDirectory;
     }
@@ -22,7 +25,11 @@ public abstract class VirtualFSNode implements Serializable {
         return this.name;
     }
 
-    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName {
+    public void rename(@NotNull String name) throws LockedVirtualFSNode,
+            VirtualFSNodeIsDeleted, NotUniqueName, EmptyNodeName {
+        if(name.equals("")) {
+            throw new EmptyNodeName();
+        }
         this.name = name;
     }
 

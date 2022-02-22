@@ -15,18 +15,18 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
 
     transient private ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
-    public VirtualFile(@NotNull String name) {
+    public VirtualFile(@NotNull String name) throws EmptyNodeName {
         this(name, null, -1);
     }
 
-    public VirtualFile(@NotNull String name, @NotNull VirtualDirectory rootDirectory) {
+    public VirtualFile(@NotNull String name, @NotNull VirtualDirectory rootDirectory) throws EmptyNodeName {
         this(name, rootDirectory, -1);
     }
 
     protected VirtualFile(
             @NotNull String name,
             VirtualDirectory rootDirectory,
-            long contentPosition) {
+            long contentPosition) throws EmptyNodeName {
         super(name, rootDirectory);
         this.contentPosition = contentPosition;
         this.createdAt = new Date();
@@ -48,7 +48,7 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
     }
 
     @Override
-    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName {
+    public void rename(@NotNull String name) throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName, EmptyNodeName {
         if(isDeleted) throw new VirtualFSNodeIsDeleted();
         List<Lock> locks = new ArrayList<>();
         try {
@@ -144,7 +144,7 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
 
     VirtualFile clone(@NotNull VirtualDirectory destinationDirectory)
             throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException,
-            IOException, VirtualFSNodeIsDeleted {
+            IOException, VirtualFSNodeIsDeleted, EmptyNodeName {
         if(isDeleted) throw new VirtualFSNodeIsDeleted();
         VirtualFile clonedFile = new VirtualFile(
                 this.name,
@@ -167,7 +167,7 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
 
     public VirtualFile copy(@NotNull VirtualDirectory destinationDirectory)
             throws NullVirtualFS, LockedVirtualFSNode, OverlappingVirtualFileLockException,
-            IOException, VirtualFSNodeIsDeleted, NotUniqueName {
+            IOException, VirtualFSNodeIsDeleted, NotUniqueName, EmptyNodeName {
         Lock lock = tryReadLock();
         Lock directoryLock;
         try {

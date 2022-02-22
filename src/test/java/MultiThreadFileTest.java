@@ -17,7 +17,7 @@ public class MultiThreadFileTest {
     private VirtualFS virtualFS;
 
     @BeforeEach
-    public void setup() throws IOException, ClassNotFoundException {
+    public void setup() throws IOException, ClassNotFoundException, VFSException {
         folder.create();
         File sourceFile = folder.newFile(name);
         virtualFS = new VirtualFS(sourceFile);
