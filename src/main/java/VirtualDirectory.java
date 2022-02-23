@@ -649,6 +649,29 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         save();
     }
 
+    public void importFile(@NotNull File file) throws LockedVirtualFSNodeException, NullVirtualFSException,
+            OverlappingVirtualFileLockException, IOException, NotUniqueNameException, EmptyNodeNameException {
+        if (!file.isFile()) {
+            throw new InvalidObjectException(String.format("File is not a file: %s", file.getAbsolutePath()));
+        }
+        Lock lock = tryWriteLockFiles();
+
+        Date createdAt = new Date(((FileTime) Files.getAttribute(file.toPath(), "creationTime")).toMillis());
+        Date modifiedAt = new Date(((FileTime) Files.getAttribute(file.toPath(), "lastModifiedTime")).toMillis());
+        VirtualFile virtualFile = new VirtualFile(file.getName(), this, -1, createdAt, modifiedAt);
+        paste(virtualFile);
+        VirtualRandomAccessFile virtualRandomAccessFile = virtualFile.open("rw");
+        RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
+        byte[] b = new byte[(int) randomAccessFile.length()];
+        randomAccessFile.read(b);
+        randomAccessFile.close();
+        virtualRandomAccessFile.write(b);
+        virtualRandomAccessFile.close();
+
+        lock.unlock();
+        save();
+    }
+
     /**
      * Экспорт данных в физическую папку
      */
