@@ -33,6 +33,18 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
         this.modifiedAt = this.createdAt;
     }
 
+    protected VirtualFile(
+            @NotNull String name,
+            VirtualDirectory rootDirectory,
+            long contentPosition,
+            @NotNull Date createdAt,
+            @NotNull Date modifiedAt) throws EmptyNodeName {
+        super(name, rootDirectory);
+        this.contentPosition = contentPosition;
+        this.createdAt = createdAt;
+        this.modifiedAt = modifiedAt;
+    }
+
     private void readObject(@NotNull ObjectInputStream inputStream) throws IOException, ClassNotFoundException {
         inputStream.defaultReadObject();
         readWriteLock = new ReentrantReadWriteLock();
@@ -148,7 +160,10 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
         if(isDeleted) throw new VirtualFSNodeIsDeleted();
         VirtualFile clonedFile = new VirtualFile(
                 this.name,
-                destinationDirectory
+                destinationDirectory,
+                -1,
+                createdAt,
+                modifiedAt
         );
 
         if(contentPosition != -1) {
@@ -177,6 +192,11 @@ public class VirtualFile extends VirtualFSNode implements Serializable {
             throw e;
         }
         destinationDirectory.isModifying.set(true);
+        if(!destinationDirectory.checkForUniqueFileName(name)) {
+            lock.unlock();
+            destinationDirectory.isModifying.set(false);
+            throw new NotUniqueName();
+        }
         VirtualFile copiedFile = this.clone(destinationDirectory);
         destinationDirectory.paste(copiedFile);
         lock.unlock();

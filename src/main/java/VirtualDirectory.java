@@ -2,6 +2,8 @@ import exceptions.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -461,21 +463,26 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         return locks;
     }
 
-    public void importContent(@NotNull VirtualDirectory directory)
+    public void importContent(@NotNull VirtualDirectory originalDirectory)
             throws LockedVirtualFSNode, NullVirtualFS,
             OverlappingVirtualFileLockException, IOException, VirtualFSNodeIsDeleted, NotUniqueName, EmptyNodeName {
-        List<Lock> locks = directory.tryReadLockDown();
+        List<Lock> locks = originalDirectory.tryReadLockDown();
         locks = tryLockWriteFilesDirectories(locks);
 
-        for (VirtualDirectory virtualDirectory : directory.directories) {
-            if(!checkForUniqueDirectoryName(virtualDirectory.getName())) {
-                locks.forEach(Lock::unlock);
-                throw new NotUniqueName();
+        for (VirtualDirectory directory : originalDirectory.directories) {
+            if(!checkForUniqueDirectoryName(directory.getName())) {
+                for(VirtualDirectory virtualDirectory : directories) {
+                    if(virtualDirectory.getName().equals(directory.getName())) {
+                        virtualDirectory.importContent(directory);
+                        break;
+                    }
+                }
+            } else {
+                paste(directory.clone(this));
             }
-            paste(virtualDirectory.clone(this));
         }
 
-        for (VirtualFile virtualFile : directory.files) {
+        for (VirtualFile virtualFile : originalDirectory.files) {
             if(!checkForUniqueFileName(virtualFile.getName())) {
                 locks.forEach(Lock::unlock);
                 throw new NotUniqueName();
@@ -498,19 +505,32 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
         for (final File fileEntry : Objects.requireNonNull(folder.listFiles())) {
             if (fileEntry.isDirectory()) {
+                VirtualDirectory directory = new VirtualDirectory(fileEntry.getName());;
                 if(!checkForUniqueDirectoryName(fileEntry.getName())) {
-                    locks.forEach(Lock::unlock);
-                    throw new NotUniqueName();
+                    for(VirtualDirectory virtualDirectory : directories) {
+                        if(virtualDirectory.getName().equals(fileEntry.getName())) {
+                            directory = virtualDirectory;
+                            break;
+                        }
+                    }
+                } else {
+                    paste(directory);
                 }
-                VirtualDirectory directory = new VirtualDirectory(fileEntry.getName());
-                paste(directory);
                 directory.importContent(fileEntry);
             } else {
                 if(!checkForUniqueFileName(fileEntry.getName())) {
                     locks.forEach(Lock::unlock);
                     throw new NotUniqueName();
                 }
-                VirtualFile file = new VirtualFile(fileEntry.getName());
+                Date createdAt = new Date(((FileTime) Files.getAttribute(fileEntry.toPath(), "creationTime")).toMillis());
+                Date modifiedAt = new Date(((FileTime) Files.getAttribute(fileEntry.toPath(), "lastModifiedTime")).toMillis());
+                VirtualFile file = new VirtualFile(
+                        fileEntry.getName(),
+                        this,
+                        -1,
+                        createdAt,
+                        modifiedAt
+                );
                 paste(file);
                 VirtualRandomAccessFile virtualRandomAccessFile = file.open("rw");
                 RandomAccessFile randomAccessFile = new RandomAccessFile(fileEntry,"r");
@@ -537,7 +557,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
         for (VirtualDirectory directory : directories) {
             File newDirectory = new File(folder, directory.getName());
-            if(newDirectory.mkdir()) {
+            if(newDirectory.isDirectory() || newDirectory.mkdir()) {
                 directory.exportContent(newDirectory);
             }
         }
