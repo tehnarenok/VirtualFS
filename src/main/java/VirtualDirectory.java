@@ -635,11 +635,17 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         save();
     }
 
+    /**
+     * импорт физического файла в директорию
+     */
     public void importFile(@NotNull File file) throws LockedVirtualFSNodeException, NullVirtualFSException,
             OverlappingVirtualFileLockException, IOException, NotUniqueNameException, EmptyNodeNameException {
         importFile(file, false);
     }
 
+    /**
+     * импорт физического файла в директорию
+     */
     private void importFile(@NotNull File file, boolean isLocked) throws LockedVirtualFSNodeException, NullVirtualFSException,
             OverlappingVirtualFileLockException, IOException, NotUniqueNameException, EmptyNodeNameException {
         if (!file.isFile()) {
