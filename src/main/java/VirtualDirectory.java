@@ -627,21 +627,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
                 }
                 directory.importContent(fileEntry);
             } else {
-                if (!checkForUniqueFileName(fileEntry.getName())) {
-                    locks.forEach(Lock::unlock);
-                    throw new NotUniqueNameException();
-                }
-                Date createdAt = new Date(((FileTime) Files.getAttribute(fileEntry.toPath(), "creationTime")).toMillis());
-                Date modifiedAt = new Date(((FileTime) Files.getAttribute(fileEntry.toPath(), "lastModifiedTime")).toMillis());
-                VirtualFile file = new VirtualFile(fileEntry.getName(), this, -1, createdAt, modifiedAt);
-                paste(file);
-                VirtualRandomAccessFile virtualRandomAccessFile = file.open("rw");
-                RandomAccessFile randomAccessFile = new RandomAccessFile(fileEntry, "r");
-                byte[] b = new byte[(int) randomAccessFile.length()];
-                randomAccessFile.read(b);
-                randomAccessFile.close();
-                virtualRandomAccessFile.write(b);
-                virtualRandomAccessFile.close();
+                importFile(fileEntry, true);
             }
         }
 
@@ -651,10 +637,23 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
 
     public void importFile(@NotNull File file) throws LockedVirtualFSNodeException, NullVirtualFSException,
             OverlappingVirtualFileLockException, IOException, NotUniqueNameException, EmptyNodeNameException {
+        importFile(file, false);
+    }
+
+    private void importFile(@NotNull File file, boolean isLocked) throws LockedVirtualFSNodeException, NullVirtualFSException,
+            OverlappingVirtualFileLockException, IOException, NotUniqueNameException, EmptyNodeNameException {
         if (!file.isFile()) {
             throw new InvalidObjectException(String.format("File is not a file: %s", file.getAbsolutePath()));
         }
-        Lock lock = tryWriteLockFiles();
+        Lock lock = null;
+        if(!isLocked) {
+            lock = tryWriteLockFiles();
+        }
+
+        if (!checkForUniqueFileName(file.getName())) {
+            if(lock != null) lock.unlock();
+            throw new NotUniqueNameException();
+        }
 
         Date createdAt = new Date(((FileTime) Files.getAttribute(file.toPath(), "creationTime")).toMillis());
         Date modifiedAt = new Date(((FileTime) Files.getAttribute(file.toPath(), "lastModifiedTime")).toMillis());
@@ -668,7 +667,7 @@ public class VirtualDirectory extends VirtualFSNode implements Serializable {
         virtualRandomAccessFile.write(b);
         virtualRandomAccessFile.close();
 
-        lock.unlock();
+        if(lock != null) lock.unlock();
         save();
     }
 
