@@ -31,7 +31,7 @@ public class MultiThreadVirtualDirectoryTest {
 
         VirtualRandomAccessFile randomAccessFile = file.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, directory::remove);
+        assertThrows(LockedVirtualFSNodeException.class, directory::remove);
 
         randomAccessFile.close();
 
@@ -47,7 +47,7 @@ public class MultiThreadVirtualDirectoryTest {
 
         VirtualRandomAccessFile randomAccessFile = file.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, () -> directory.copy(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> directory.copy(destinationDirectory));
 
         randomAccessFile.close();
 
@@ -63,7 +63,7 @@ public class MultiThreadVirtualDirectoryTest {
 
         VirtualRandomAccessFile randomAccessFile = file.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, () -> directory.move(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> directory.move(destinationDirectory));
 
         randomAccessFile.close();
 
@@ -98,7 +98,7 @@ public class MultiThreadVirtualDirectoryTest {
 
         VirtualRandomAccessFile randomAccessFile = file.open("r");
 
-        assertThrows(LockedVirtualFSNode.class, directory::remove);
+        assertThrows(LockedVirtualFSNodeException.class, directory::remove);
 
         randomAccessFile.close();
 
@@ -125,7 +125,7 @@ public class MultiThreadVirtualDirectoryTest {
 
         VirtualRandomAccessFile randomAccessFile = file.open("r");
 
-        assertThrows(LockedVirtualFSNode.class, () -> directory.move(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> directory.move(destinationDirectory));
 
         randomAccessFile.close();
 

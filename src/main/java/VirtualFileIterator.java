@@ -1,4 +1,4 @@
-import exceptions.LockedVirtualFSNode;
+import exceptions.LockedVirtualFSNodeException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ConcurrentModificationException;
@@ -10,13 +10,12 @@ import java.util.function.Predicate;
 class VirtualFileIterator implements Iterator<VirtualFile> {
     private final Predicate<VirtualFile> match;
     private final boolean isRecursive;
-    private Integer fileIdx;
-    private Integer directoryIdx;
-    private Iterator<VirtualFile> directoryIterator;
-
     private final VirtualDirectory directory;
     private final List<VirtualFile> files;
     private final List<VirtualDirectory> directories;
+    private int fileIdx;
+    private int directoryIdx;
+    private Iterator<VirtualFile> directoryIterator;
 
     public VirtualFileIterator(
             @NotNull Predicate<VirtualFile> match,
@@ -33,11 +32,14 @@ class VirtualFileIterator implements Iterator<VirtualFile> {
         try {
             this.files = directory.getFiles();
             this.directories = directory.getDirectories();
-        } catch (LockedVirtualFSNode e) {
+        } catch (LockedVirtualFSNodeException e) {
             throw new ConcurrentModificationException();
         }
     }
 
+    /**
+     * Проверка на то, что существует еще как минимум один файл, подходящий под маску
+     */
     @Override
     public boolean hasNext() {
         if (directory.isModifying()) {
@@ -72,6 +74,9 @@ class VirtualFileIterator implements Iterator<VirtualFile> {
         return false;
     }
 
+    /**
+     * Возвращает следующий найденный файл по маске
+     */
     @Override
     public VirtualFile next() {
         if (hasNext()) {

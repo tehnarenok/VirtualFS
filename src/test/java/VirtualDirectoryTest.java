@@ -50,7 +50,7 @@ class VirtualDirectoryTest {
 
     @Test
     void createDirectoryWithEmptyName() throws VFSException {
-        assertThrows(EmptyNodeName.class, () -> new VirtualDirectory(""));
+        assertThrows(EmptyNodeNameException.class, () -> new VirtualDirectory(""));
     }
 
     @Test
@@ -65,7 +65,7 @@ class VirtualDirectoryTest {
     @Test
     void renameToEmpty() throws VFSException {
         VirtualDirectory virtualDirectory = virtualFS.mkdir(name);
-        assertThrows(EmptyNodeName.class, () -> virtualDirectory.rename(""));
+        assertThrows(EmptyNodeNameException.class, () -> virtualDirectory.rename(""));
     }
 
 
@@ -73,7 +73,7 @@ class VirtualDirectoryTest {
     void uniqueName() throws VFSException {
         virtualFS.mkdir(name);
 
-        assertThrows(NotUniqueName.class, () -> virtualFS.mkdir(name));
+        assertThrows(NotUniqueNameException.class, () -> virtualFS.mkdir(name));
         assertDoesNotThrow(() -> virtualFS.mkdir(name + name));
     }
 
@@ -85,7 +85,7 @@ class VirtualDirectoryTest {
         VirtualDirectory virtualDirectory = virtualFS.mkdir(name_1);
         virtualFS.mkdir(name_2);
 
-        assertThrows(NotUniqueName.class, () -> virtualDirectory.rename(name_2));
+        assertThrows(NotUniqueNameException.class, () -> virtualDirectory.rename(name_2));
         assertDoesNotThrow(() -> virtualDirectory.rename(name_1));
         assertDoesNotThrow(() -> virtualDirectory.rename(name_3));
     }
@@ -166,7 +166,7 @@ class VirtualDirectoryTest {
     void removeWithNullRootDirectory() throws VFSException {
         VirtualDirectory rootDirectory = new VirtualDirectory(name);
 
-        UnremovableVirtualNode exception = assertThrows(UnremovableVirtualNode.class, rootDirectory::remove);
+        UnremovableVirtualNodeException exception = assertThrows(UnremovableVirtualNodeException.class, rootDirectory::remove);
 
         assertTrue(exception.getMessage().contains("This node cannot be deleted"));
     }
@@ -218,12 +218,12 @@ class VirtualDirectoryTest {
         VirtualDirectory virtualDirectory = rootDirectory.mkdir(name);
 
         assertDoesNotThrow(() -> virtualDirectory.remove());
-        assertThrows(VirtualFSNodeIsDeleted.class, virtualDirectory::remove);
+        assertThrows(VirtualFSNodeIsDeletedException.class, virtualDirectory::remove);
     }
 
     @Test
     void removeRoot() {
-        assertThrows(UnremovableVirtualNode.class, () -> virtualFS.getRootDirectory().remove());
+        assertThrows(UnremovableVirtualNodeException.class, () -> virtualFS.getRootDirectory().remove());
     }
 
     @Test
@@ -425,9 +425,9 @@ class VirtualDirectoryTest {
 
         VirtualRandomAccessFile randomAccessFile = file.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, () -> directory.move(destinationDirectory));
-        assertThrows(LockedVirtualFSNode.class, () -> directory.copy(destinationDirectory));
-        assertThrows(LockedVirtualFSNode.class, directory::remove);
+        assertThrows(LockedVirtualFSNodeException.class, () -> directory.move(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> directory.copy(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, directory::remove);
 
         assertDoesNotThrow(() -> directory.rename(name + name));
         assertDoesNotThrow(() -> directory.touch(name + name));
@@ -447,8 +447,8 @@ class VirtualDirectoryTest {
 
         VirtualRandomAccessFile randomAccessFile = file.open("r");
 
-        assertThrows(LockedVirtualFSNode.class, () -> directory.move(destinationDirectory));
-        assertThrows(LockedVirtualFSNode.class, directory::remove);
+        assertThrows(LockedVirtualFSNodeException.class, () -> directory.move(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, directory::remove);
 
         assertDoesNotThrow(() -> directory.rename(name + name));
         assertDoesNotThrow(() -> directory.touch(name + name));
@@ -497,7 +497,7 @@ class VirtualDirectoryTest {
         randomAccessFile.write("Hello".getBytes());
 
         assertThrows(
-                LockedVirtualFSNode.class,
+                LockedVirtualFSNodeException.class,
                 () -> virtualFS_2.getRootDirectory().importContent(virtualFS_1.getRootDirectory())
         );
 

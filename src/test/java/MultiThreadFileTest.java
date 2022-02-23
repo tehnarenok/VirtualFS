@@ -29,7 +29,7 @@ public class MultiThreadFileTest {
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("r");
 
-        assertThrows(LockedVirtualFSNode.class, virtualFile::remove);
+        assertThrows(LockedVirtualFSNodeException.class, virtualFile::remove);
 
         randomAccessFile.close();
 
@@ -43,7 +43,7 @@ public class MultiThreadFileTest {
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("r");
 
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.move(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.move(destinationDirectory));
 
         randomAccessFile.close();
 
@@ -68,7 +68,7 @@ public class MultiThreadFileTest {
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("r");
 
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.rename(name + name));
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.rename(name + name));
 
         randomAccessFile.close();
 
@@ -81,7 +81,7 @@ public class MultiThreadFileTest {
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, virtualFile::remove);
+        assertThrows(LockedVirtualFSNodeException.class, virtualFile::remove);
 
         randomAccessFile.close();
 
@@ -95,7 +95,7 @@ public class MultiThreadFileTest {
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.move(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.move(destinationDirectory));
 
         randomAccessFile.close();
 
@@ -109,7 +109,7 @@ public class MultiThreadFileTest {
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.copy(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.copy(destinationDirectory));
 
         randomAccessFile.close();
 
@@ -123,7 +123,7 @@ public class MultiThreadFileTest {
 
         VirtualRandomAccessFile randomAccessFile = virtualFile.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.rename(name + name));
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.rename(name + name));
 
         randomAccessFile.close();
 

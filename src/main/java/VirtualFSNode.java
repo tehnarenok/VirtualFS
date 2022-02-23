@@ -8,60 +8,79 @@ import java.io.Serializable;
 public abstract class VirtualFSNode implements Serializable {
     protected String name;
     protected VirtualDirectory rootDirectory;
-    transient boolean isDeleted = false;
     transient protected VirtualFS virtualFS;
+    transient boolean isDeleted = false;
 
     protected VirtualFSNode(
             @NotNull String name,
-            VirtualDirectory rootDirectory) throws EmptyNodeName {
-        if(name.equals("")) {
-            throw new EmptyNodeName();
+            VirtualDirectory rootDirectory) throws EmptyNodeNameException {
+        if (name.equals("")) {
+            throw new EmptyNodeNameException();
         }
         this.name = name;
         this.rootDirectory = rootDirectory;
     }
 
+    /**
+     * Получение имени ноды
+     */
     public String getName() {
         return this.name;
     }
 
-    public void rename(@NotNull String name) throws LockedVirtualFSNode,
-            VirtualFSNodeIsDeleted, NotUniqueName, EmptyNodeName {
-        if(name.equals("")) {
-            throw new EmptyNodeName();
+    /**
+     * Переимнование ноды
+     */
+    public void rename(@NotNull String name) throws LockedVirtualFSNodeException,
+            VirtualFSNodeIsDeletedException, NotUniqueNameException, EmptyNodeNameException {
+        if (name.equals("")) {
+            throw new EmptyNodeNameException();
         }
         this.name = name;
     }
 
+    /**
+     * Получение root директории
+     */
     public VirtualDirectory getRootDirectory() {
         return this.rootDirectory;
     }
 
+    /**
+     * Проверки на возможность удаления
+     */
     public void remove()
-            throws UnremovableVirtualNode, OverlappingVirtualFileLockException,
-            IOException, NullVirtualFS, LockedVirtualFSNode, VirtualFSNodeIsDeleted {
-        if(this.isDeleted) {
-            throw new VirtualFSNodeIsDeleted();
+            throws UnremovableVirtualNodeException, OverlappingVirtualFileLockException,
+            IOException, NullVirtualFSException, LockedVirtualFSNodeException, VirtualFSNodeIsDeletedException {
+        if (this.isDeleted) {
+            throw new VirtualFSNodeIsDeletedException();
         }
-        if(this.rootDirectory == null) {
-            throw new UnremovableVirtualNode();
+        if (this.rootDirectory == null) {
+            throw new UnremovableVirtualNodeException();
         }
     }
 
     public void move(@NotNull VirtualDirectory destinationDirectory)
-            throws LockedVirtualFSNode, VirtualFSNodeIsDeleted, NotUniqueName, UnremovableVirtualNode {}
+            throws LockedVirtualFSNodeException, VirtualFSNodeIsDeletedException, NotUniqueNameException, UnremovableVirtualNodeException {
+    }
 
-    protected File getSourceFile() throws NullVirtualFS {
+    /**
+     * Получение физического файла, где хранится текущая VFS
+     */
+    protected File getSourceFile() throws NullVirtualFSException {
         return getVirtualFS().sourceFile;
     }
 
-    protected VirtualFS getVirtualFS() throws NullVirtualFS {
-        if(virtualFS != null) return virtualFS;
-        if(rootDirectory != null) {
+    /**
+     * Поучение VFS в которой находится файл/директория
+     */
+    protected VirtualFS getVirtualFS() throws NullVirtualFSException {
+        if (virtualFS != null) return virtualFS;
+        if (rootDirectory != null) {
             virtualFS = rootDirectory.getVirtualFS();
             return virtualFS;
         }
 
-        throw new NullVirtualFS();
+        throw new NullVirtualFSException();
     }
 }

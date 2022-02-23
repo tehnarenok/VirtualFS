@@ -41,7 +41,7 @@ class VirtualFileTest {
 
     @Test
     void createFileWithEmptyName() throws VFSException {
-        assertThrows(EmptyNodeName.class, () -> new VirtualFile(""));
+        assertThrows(EmptyNodeNameException.class, () -> new VirtualFile(""));
     }
 
     @Test
@@ -68,14 +68,14 @@ class VirtualFileTest {
     @Test
     void renameEmptyName() throws VFSException {
         VirtualFile virtualFile = new VirtualFile(name);
-        assertThrows(EmptyNodeName.class, () -> virtualFile.rename(""));
+        assertThrows(EmptyNodeNameException.class, () -> virtualFile.rename(""));
     }
 
     @Test
     void uniqueName() throws VFSException {
         virtualFS.touch(name);
 
-        assertThrows(NotUniqueName.class, () -> virtualFS.touch(name));
+        assertThrows(NotUniqueNameException.class, () -> virtualFS.touch(name));
         assertDoesNotThrow(() -> virtualFS.touch(name + name));
     }
 
@@ -87,7 +87,7 @@ class VirtualFileTest {
         VirtualFile virtualFile = virtualFS.touch(name_1);
         virtualFS.touch(name_2);
 
-        assertThrows(NotUniqueName.class, () -> virtualFile.rename(name_2));
+        assertThrows(NotUniqueNameException.class, () -> virtualFile.rename(name_2));
         assertDoesNotThrow(() -> virtualFile.rename(name_1));
         assertDoesNotThrow(() -> virtualFile.rename(name_3));
     }
@@ -113,7 +113,7 @@ class VirtualFileTest {
     void removeWithNullRootDirectory() throws VFSException {
         VirtualFile virtualFile = new VirtualFile(name);
 
-        UnremovableVirtualNode exception = assertThrows(UnremovableVirtualNode.class, virtualFile::remove);
+        UnremovableVirtualNodeException exception = assertThrows(UnremovableVirtualNodeException.class, virtualFile::remove);
 
         assertEquals(
                 "This node cannot be deleted",
@@ -156,7 +156,7 @@ class VirtualFileTest {
 
         assertDoesNotThrow(() -> virtualFile.remove());
 
-        assertThrows(VirtualFSNodeIsDeleted.class, virtualFile::remove);
+        assertThrows(VirtualFSNodeIsDeletedException.class, virtualFile::remove);
     }
 
     @Test
@@ -379,7 +379,7 @@ class VirtualFileTest {
                 VirtualRandomAccessFile randomAccessFile = file.open("rw");
                 randomAccessFile.write(content.getBytes());
                 randomAccessFile.close();
-            } catch (IOException | OverlappingVirtualFileLockException | NullVirtualFS | LockedVirtualFSNode e) {
+            } catch (IOException | OverlappingVirtualFileLockException | NullVirtualFSException | LockedVirtualFSNodeException e) {
                 e.printStackTrace();
             }
         }
@@ -435,9 +435,9 @@ class VirtualFileTest {
 
         virtualFile.open("r");
 
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.open("rw"));
-        assertThrows(LockedVirtualFSNode.class, virtualFile::remove);
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.move(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.open("rw"));
+        assertThrows(LockedVirtualFSNodeException.class, virtualFile::remove);
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.move(destinationDirectory));
 
         assertDoesNotThrow(() -> virtualFile.copy(destinationDirectory));
         assertDoesNotThrow(() -> virtualFile.open("r"));
@@ -450,10 +450,10 @@ class VirtualFileTest {
 
         virtualFile.open("rw");
 
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.open("rw"));
-        assertThrows(LockedVirtualFSNode.class, virtualFile::remove);
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.move(destinationDirectory));
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.open("rw"));
-        assertThrows(LockedVirtualFSNode.class, () -> virtualFile.copy(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.open("rw"));
+        assertThrows(LockedVirtualFSNodeException.class, virtualFile::remove);
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.move(destinationDirectory));
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.open("rw"));
+        assertThrows(LockedVirtualFSNodeException.class, () -> virtualFile.copy(destinationDirectory));
     }
 }
