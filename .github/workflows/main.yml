@@ -22,16 +22,14 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
-      - name: Setup JDK 1.8
+      - name: Setup JDK
         uses: actions/setup-java@v2
         with:
-          java-version: '11'
-          distribution: 'adopt'
+          distribution: temurin
+          java-version: 11
         
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
-        with:
-          arguments: test
         
       - name: Make gradlew executable
         run: chmod +x ./gradlew
