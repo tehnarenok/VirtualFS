@@ -28,14 +28,10 @@ jobs:
           distribution: temurin
           java-version: 11
         
-      - name: Setup Gradle
+      - name: Setup and execute Gradle 'test' task
         uses: gradle/gradle-build-action@v2
-        
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Test
-        run: ./gradlew test
+        with:
+          arguments: test
       - name: Resuts
         uses: dorny/test-reporter@v1
         if: success() || failure()    # run this step even if previous step failed
