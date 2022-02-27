@@ -12,7 +12,7 @@ class VirtualFileIterator implements Iterator<VirtualFile> {
     private final boolean isRecursive;
     private final VirtualDirectory directory;
     private final List<VirtualFile> files;
-    private final List<VirtualDirectory> directories;
+    private List<VirtualDirectory> directories = null;
     private int fileIdx;
     private int directoryIdx;
     private Iterator<VirtualFile> directoryIterator;
@@ -31,7 +31,9 @@ class VirtualFileIterator implements Iterator<VirtualFile> {
         this.directory = directory;
         try {
             this.files = directory.getFiles();
-            this.directories = directory.getDirectories();
+            if(isRecursive) {
+                this.directories = directory.getDirectories();
+            }
         } catch (LockedVirtualFSNodeException e) {
             throw new ConcurrentModificationException();
         }
